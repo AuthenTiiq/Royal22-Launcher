@@ -2,7 +2,7 @@
 name: Launcher Build
 on:
   push:
-    branches: [ master ]
+    branches: [ 2.0.0 ]
 
 jobs:
   create-release:
@@ -22,7 +22,7 @@ jobs:
         with:
           tag_name: ${{ env.version }}
           release_name: release ${{ env.version }}
-          draft: false
+          draft: true
           prerelease: ${{ contains(env.version, 'beta') || contains(env.version, 'alpha') }}
 
   build-launcher:
