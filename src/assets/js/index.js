@@ -40,16 +40,16 @@ class Splash {
         let splash = splashes[Math.floor(Math.random() * splashes.length)];
         this.splashMessage.textContent = splash.message;
         this.splashAuthor.children[0].textContent = "@" + splash.author;
-        await sleep(100);
+        await sleep(50);
         document.querySelector("#splash").style.display = "block";
-        await sleep(500);
+        await sleep(250);
         this.splash.classList.add("opacity");
-        await sleep(500);
+        await sleep(250);
         this.splash.classList.add("translate");
         this.splashMessage.classList.add("opacity");
         this.splashAuthor.classList.add("opacity");
         this.message.classList.add("opacity");
-        await sleep(1000);
+        await sleep(500);
         this.checkUpdate();
     }
 

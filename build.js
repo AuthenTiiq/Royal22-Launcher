@@ -100,7 +100,12 @@ class Index {
                     {
                         target: "zip",
                         arch: "universal"
-                    }]
+                    },
+                    {
+                        target: "pkg",
+                        arch: "universal"
+                    }
+                ]
                 },
                 linux: {
                     icon: "./app/assets/images/icon.png",
