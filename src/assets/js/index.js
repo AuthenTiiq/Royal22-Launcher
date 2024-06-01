@@ -30,26 +30,25 @@ class Splash {
 
     async startAnimation() {
         let splashes = [
-            { "message": "Je vois quelque chose en direction de..", "author": "Explorateur" },+
-            { "message": "Et si ce n'était qu'un projet...", "author": "Inconnu" },
+            { "message": "Je vois quelque chose en direction de.. RC", "author": "Explorateur" },+
+            { "message": "Et si ce n'était qu'un projet...", "author": "Explorateur" },
             { "message": "Je le vois ! Oui ! C'est le Royaume !", "author": "Explorateur" },
             { "message": "Et si RoyalCreep's...", "author": "Inconnu" },
-            { "message": "RoyalCreep's est née en 2013...", "author": "Inconnu" },
-            { "message": "Rapidité...", "author": "Inconnu" }
+            { "message": "RoyalCreep's est née en 2013...", "author": "Inconnu" }
         ];
         let splash = splashes[Math.floor(Math.random() * splashes.length)];
         this.splashMessage.textContent = splash.message;
         this.splashAuthor.children[0].textContent = "@" + splash.author;
-        await sleep(50);
+        await sleep(100);
         document.querySelector("#splash").style.display = "block";
-        await sleep(250);
+        await sleep(500);
         this.splash.classList.add("opacity");
-        await sleep(250);
+        await sleep(500);
         this.splash.classList.add("translate");
         this.splashMessage.classList.add("opacity");
         this.splashAuthor.classList.add("opacity");
         this.message.classList.add("opacity");
-        await sleep(500);
+        await sleep(1000);
         this.checkUpdate();
     }
 
@@ -61,7 +60,7 @@ class Splash {
         });
 
         ipcRenderer.on('updateAvailable', () => {
-            this.setStatus(`Mise à jour disponible !`);
+            this.setStatus(`Mise à jour disponible !<br>MacOS : royalcreeps.fr/launcher <br>`);
             if (os.platform() == 'win32') ipcRenderer.send('start-update');
             else return this.dowloadUpdate();
         })
