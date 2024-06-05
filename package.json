@@ -1,8 +1,8 @@
 {
     "name": "royalcreeps-launcher",
     "preductname": "RoyalCreeps Launcher",
-    "version": "2.0.2",
-    "description": "Launcher Minecraft pour le serveur RoyalCreeps",
+    "version": "2.0.3",
+    "description": "Launcher Minecraft de RoyalCreep's",
     "main": "src/app.js",
     "author": {
         "name": "AuthenTiiq, RoyalCreeps",
@@ -22,7 +22,7 @@
         "ignore": "**/test"
     },
     "dependencies": {
-        "electron-updater": "^6.1.8",
+        "electron-updater": "^6.2.1",
         "minecraft-java-core": "^3.10.4",
         "node-bdd": "^2.0.4",
         "node-fetch": "^2.7.0",

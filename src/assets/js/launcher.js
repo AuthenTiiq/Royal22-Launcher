@@ -46,7 +46,7 @@ class Launcher {
     
         const changeSource = (url) => {
             const video = document.getElementById("background-video");
-            console.log("Changement de la source de la vidéo vers :", url);
+            console.log("Chargement du background RoyalCreeps : ", url);
             video.src = url;
             video.poster = ""; // Réinitialise le poster
             video.load(); // Charge la nouvelle source

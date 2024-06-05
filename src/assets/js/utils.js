@@ -8,12 +8,15 @@ const { Status } = require('minecraft-java-core')
 const fs = require('fs');
 const pkg = require('../package.json');
 
+
 import config from './utils/config.js';
 import database from './utils/database.js';
 import logger from './utils/logger.js';
 import popup from './utils/popup.js';
 import { skin2D } from './utils/skin.js';
 import slider from './utils/slider.js';
+
+
 
 async function setBackground(theme) {
     if (typeof theme == 'undefined') {
@@ -82,37 +85,48 @@ async function headplayer(skinBase64) {
     document.querySelector(".player-head").style.backgroundImage = `url(${skin})`;
 }
 
-async function setStatus(opt) {
-    let nameServerElement = document.querySelector('.server-status-name')
-    let statusServerElement = document.querySelector('.server-status-text')
-    let playersOnline = document.querySelector('.status-player-count .player-count')
 
-    if (!opt) {
-        statusServerElement.classList.add('red')
-        statusServerElement.innerHTML = `Ferme - 0 ms`
-        document.querySelector('.status-player-count').classList.add('red')
-        playersOnline.innerHTML = '0'
-        return
-    }
-
-    let { ip, port, nameServer } = opt
-    nameServerElement.innerHTML = nameServer
-    let status = new Status(ip, port);
-    let statusServer = await status.getStatus().then(res => res).catch(err => err);
-
-    if (!statusServer.error) {
-        statusServerElement.classList.remove('red')
-        document.querySelector('.status-player-count').classList.remove('red')
-        statusServerElement.innerHTML = `En ligne - ${statusServer.ms} ms`
-        playersOnline.innerHTML = statusServer.playersConnect
-    } else {
-        statusServerElement.classList.add('red')
-        statusServerElement.innerHTML = `Ferme - 0 ms`
-        document.querySelector('.status-player-count').classList.add('red')
-        playersOnline.innerHTML = '0'
+async function getServerInfo() {
+    try {
+        const response = await fetch('https://api.mcstatus.io/v2/status/java/royalcreeps.fr');
+        const data = await response.json();
+        console.log(data)
+        return data;
+    } catch (error) {
+        console.error('Erreur lors de la requête :', error);
+        return null;
     }
 }
 
+async function setStatus(opt) {
+    let nameServerElement = document.querySelector('.server-status-name');
+    let statusServerElement = document.querySelector('.server-status-text');
+    let playersOnline = document.querySelector('.status-player-count .player-count');
+
+    if (!opt) {
+        statusServerElement.classList.add('red');
+        statusServerElement.innerHTML = `Fermé`;
+        document.querySelector('.status-player-count').classList.add('red');
+        playersOnline.innerHTML = '0';
+        return;
+    }
+
+    let { ip, port, nameServer } = opt;
+    nameServerElement.innerHTML = nameServer;
+
+    const serverData = await getServerInfo();
+    if (serverData && serverData.online) {
+        statusServerElement.classList.remove('red');
+        document.querySelector('.status-player-count').classList.remove('red');
+        statusServerElement.innerHTML = `En ligne`;
+        playersOnline.innerHTML = serverData.players.online;
+    } else {
+        statusServerElement.classList.add('red');
+        statusServerElement.innerHTML = `Fermé`;
+        document.querySelector('.status-player-count').classList.add('red');
+        playersOnline.innerHTML = '0';
+    }
+}
 
 export {
     appdata as appdata,

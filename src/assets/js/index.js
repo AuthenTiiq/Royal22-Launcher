@@ -30,25 +30,26 @@ class Splash {
 
     async startAnimation() {
         let splashes = [
-            { "message": "Je vois quelque chose en direction de.. RC", "author": "Explorateur" },+
+            { "message": "Je vois quelque chose en direction de...", "author": "Explorateur" },+
             { "message": "Et si ce n'était qu'un projet...", "author": "Explorateur" },
             { "message": "Je le vois ! Oui ! C'est le Royaume !", "author": "Explorateur" },
             { "message": "Et si RoyalCreep's...", "author": "Inconnu" },
-            { "message": "RoyalCreep's est née en 2013...", "author": "Inconnu" }
+            { "message": "RoyalCreep's est née en 2013...", "author": "Inconnu" },
+            { "message": "Rapidité...", "author": "Inconnu" }
         ];
         let splash = splashes[Math.floor(Math.random() * splashes.length)];
         this.splashMessage.textContent = splash.message;
         this.splashAuthor.children[0].textContent = "@" + splash.author;
         await sleep(100);
         document.querySelector("#splash").style.display = "block";
-        await sleep(500);
+        await sleep(200);
         this.splash.classList.add("opacity");
-        await sleep(500);
+        await sleep(200);
         this.splash.classList.add("translate");
         this.splashMessage.classList.add("opacity");
         this.splashAuthor.classList.add("opacity");
         this.message.classList.add("opacity");
-        await sleep(1000);
+        await sleep(100);
         this.checkUpdate();
     }
 
