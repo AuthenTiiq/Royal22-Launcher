@@ -118,7 +118,7 @@ async function setStatus(opt) {
     if (serverData && serverData.online) {
         statusServerElement.classList.remove('red');
         document.querySelector('.status-player-count').classList.remove('red');
-        statusServerElement.innerHTML = `En ligne - ${serverData.version.name_raw}`;
+        statusServerElement.innerHTML = `En ligne`;
         playersOnline.innerHTML = serverData.players.online;
     } else {
         statusServerElement.classList.add('red');
