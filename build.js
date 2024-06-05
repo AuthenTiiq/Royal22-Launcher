@@ -93,6 +93,7 @@ class Index {
                     icon: "./app/assets/images/icon.icns",
                     category: "public.app-category.games",
                     identity: null,
+                    hardenedRuntime: true,
                     target: [{
                         target: "dmg",
                         arch: "universal"
