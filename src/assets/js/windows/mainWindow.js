@@ -184,11 +184,6 @@ function openServersStatusWindow() {
 }
 
 
-
-
-
-app.on('ready', createWindow);
-
 module.exports = {
     getWindow,
     createWindow,
