@@ -68,7 +68,11 @@ function createWindow() {
         {
             label: 'Fichier',
             submenu: [
-                isMac ? { label: 'Fermer', role: 'close' } : { role: 'quit' }
+                isMac ? { label: 'Fermer', role: 'close' } : { role: 'quit' },
+                { type:'separator'},
+                { label: 'Couper', accelerator: 'CmdOrCtrl+X', role: 'cut' },
+                { label: 'Copier', accelerator: 'CmdOrCtrl+C', role: 'copy' },
+                { label: 'Coller', accelerator: 'CmdOrCtrl+V', role: 'paste' }
             ]
         },
         {
