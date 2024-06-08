@@ -30,6 +30,13 @@ class Settings {
         })
         ipcRenderer.on('open-settings-launcher', () => {
             this.showLauncherSettingsPanel();
+        })
+        
+        // Gestionnaire d'événements pour la touche Échap
+        document.addEventListener('keyup', (event) => {
+            if (event.key === 'Escape') {
+                changePanel('home');
+            }
         });
     }
 

@@ -124,6 +124,7 @@ function createWindow() {
                     const { shell } = require('electron')
                     await shell.openExternal('https://royalcreeps.fr/wiki')
                 }},
+                { type: 'separator'},
                 { label: "État des serveurs", click: openServersStatusWindow, accelerator: 'CmdOrCtrl+E'}
             ]
         }
