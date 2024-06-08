@@ -78,10 +78,10 @@ function createWindow() {
                 { label: 'Se déconnecter' },
                 { type: 'separator' },
                 { label: 'Réglages', submenu: [
-                    { label: 'Gestions des comptes', click() { mainWindow.webContents.send('open-settings-panel'), mainWindow.webContents.send('open-settings-accounts');}},
-                    { label: 'Gestion de la RAM', click() { mainWindow.webContents.send('open-settings-panel'), mainWindow.webContents.send('open-settings-java');}},
-                    { label: 'Résolution', click() { mainWindow.webContents.send('open-settings-panel'), mainWindow.webContents.send('open-settings-resolution');}},
-                    { label: 'Launcher', click() { mainWindow.webContents.send('open-settings-panel'), mainWindow.webContents.send('open-settings-launcher');}},
+                    { label: 'Gestions des comptes', click() { mainWindow.webContents.send('open-settings-panel'), mainWindow.webContents.send('open-settings-accounts');}, accelerator: 'Shift+1'},
+                    { label: 'Gestion de la RAM', click() { mainWindow.webContents.send('open-settings-panel'), mainWindow.webContents.send('open-settings-java');}, accelerator: 'Shift+2'},
+                    { label: 'Résolution', click() { mainWindow.webContents.send('open-settings-panel'), mainWindow.webContents.send('open-settings-resolution');}, accelerator: 'Shift+3'},
+                    { label: 'Launcher', click() { mainWindow.webContents.send('open-settings-panel'), mainWindow.webContents.send('open-settings-launcher');}, accelerator: 'Shift+4'},
                 ] },
                 { type: 'separator'},
                 { label: 'Accéder au site web', click: async () => {
@@ -163,6 +163,17 @@ function openServersStatusWindow() {
                 serversStatusWindow.close();
             }
         });
+
+        // Gestionnaire d'événements pour intercepter les tentatives de navigation
+        serversStatusWindow.webContents.on('will-navigate', (event, url) => {
+            // Vérifier si l'URL de destination est différente de celle de la page de statut
+            if (url !== "https://status.royalcreeps.fr") {
+                // Empêcher la navigation
+                event.preventDefault();
+            }
+        });
+
+
     } else {
         serversStatusWindow.focus();
     }
