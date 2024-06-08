@@ -147,6 +147,7 @@ function openServersStatusWindow() {
             width: 800,
             height: 600,
             titleBarStyle: 'hidden',
+            alwaysOnTop: true,
             webPreferences: {
                 contextIsolation: false,
                 nodeIntegration: true
