@@ -18,6 +18,35 @@ class Settings {
         this.javaPath()
         this.resolution()
         this.launcher()
+
+        ipcRenderer.on('open-settings-accounts', () => {
+            this.showAccountsSettingsPanel();
+        })
+        ipcRenderer.on('open-settings-java', () => {
+            this.showJavaSettingsPanel();
+        })
+        ipcRenderer.on('open-settings-resolution', () => {
+            this.showResolutionSettingsPanel();
+        })
+        ipcRenderer.on('open-settings-launcher', () => {
+            this.showLauncherSettingsPanel();
+        });
+    }
+
+    showJavaSettingsPanel() {
+        document.querySelector('.nav-settings-btn#java').click();
+    }
+
+    showResolutionSettingsPanel() {
+        document.querySelector('.nav-settings-btn#resolution').click();
+    }
+
+    showLauncherSettingsPanel() {
+        document.querySelector('.nav-settings-btn#launcher').click();
+    }
+
+    showAccountsSettingsPanel() {
+        document.querySelector('.nav-settings-btn#account').click();
     }
 
     navBTN() {

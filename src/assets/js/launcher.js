@@ -29,6 +29,14 @@ class Launcher {
         this.createPanels(Login, Home, Settings);
         this.startLauncher();
         this.initBackground();
+        ipcRenderer.on('open-settings-panel', () => {
+            this.showSettingsPanel();
+        });
+
+    }
+
+    showSettingsPanel() {
+        changePanel('settings');
     }
 
     initLog() {
@@ -214,7 +222,7 @@ class Launcher {
                     let refresh_accounts = await new AZauth(this.config.online).verify(account);
 
                     if (refresh_accounts.error) {
-                        this.db.deleteData('accounts', account_ID)
+                        this.db.deleteData('accounts', account_ID)  
                         if (account_ID == account_selected) {
                             configClient.account_selected = null
                             this.db.updateData('configClient', configClient)
