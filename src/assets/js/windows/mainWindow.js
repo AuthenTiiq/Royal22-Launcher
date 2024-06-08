@@ -141,51 +141,52 @@ function createWindow() {
 let serversStatusWindow = null;
 
 function openServersStatusWindow() {
-    if (serversStatusWindow === null || serversStatusWindow.closed) {
+    // Vérifiez si la fenêtre est déjà créée et n'est pas détruite
+    if (serversStatusWindow === null || serversStatusWindow.isDestroyed()) {
         serversStatusWindow = new BrowserWindow({
-            // Propriétés de votre fenêtre
             width: 800,
             height: 600,
             titleBarStyle: 'hidden',
-            // Autres propriétés...
+            webPreferences: {
+                contextIsolation: false,
+                nodeIntegration: true
+            }
         });
 
-        // Masque les boutons de fenêtre macOS par défaut
-        serversStatusWindow.setWindowButtonVisibility(false);
+        // Masquer les boutons de fenêtre uniquement sur macOS
+        if (process.platform === 'darwin') {
+            serversStatusWindow.setWindowButtonVisibility(false);
+        }
 
-        // Charger le fichier HTML ou une URL pour afficher l'état des serveurs
         serversStatusWindow.loadURL("https://status.royalcreeps.fr");
 
-        // Attacher un gestionnaire d'événements pour la fermeture de la fenêtre
         serversStatusWindow.on('close', () => {
             serversStatusWindow = null;
         });
 
-        // Gestionnaire d'événements pour la touche Échap
         serversStatusWindow.webContents.on('before-input-event', (event, input) => {
             if (input.key === 'Escape') {
                 serversStatusWindow.close();
             }
         });
 
-        // Gestionnaire d'événements pour intercepter les tentatives de navigation
         serversStatusWindow.webContents.on('will-navigate', (event, url) => {
-            // Vérifier si l'URL de destination est différente de celle de la page de statut
             if (url !== "https://status.royalcreeps.fr") {
-                // Empêcher la navigation
                 event.preventDefault();
             }
         });
 
-
     } else {
-        serversStatusWindow.focus();
+        // Ajout de la vérification si la fenêtre a été détruite
+        if (!serversStatusWindow.isDestroyed()) {
+            serversStatusWindow.focus();
+        }
     }
 }
-
 
 module.exports = {
     getWindow,
     createWindow,
     destroyWindow,
+    openServersStatusWindow
 };
