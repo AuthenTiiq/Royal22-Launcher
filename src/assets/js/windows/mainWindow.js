@@ -74,7 +74,7 @@ function createWindow() {
         {
             label: 'Réglages',
             submenu: [
-                { label: 'Gérer mes comptes', click() { mainWindow.webContents.send('open-settings-panel'), mainWindow.webContents.send('open-settings-accounts');} },
+                { label: 'Gérer mes comptes', click() { mainWindow.webContents.send('open-settings-panel'), mainWindow.webContents.send('open-settings-accounts');}, accelerator: 'CmdOrCtrl+Shift+A' },
                 { label: 'Se déconnecter' },
                 { type: 'separator' },
                 { label: 'Réglages', submenu: [
@@ -124,7 +124,7 @@ function createWindow() {
                     const { shell } = require('electron')
                     await shell.openExternal('https://royalcreeps.fr/wiki')
                 }},
-                { label: "État des serveurs", click: openServersStatusWindow}
+                { label: "État des serveurs", click: openServersStatusWindow, accelerator: 'CmdOrCtrl+E'}
             ]
         }
     ];
@@ -141,15 +141,34 @@ function openServersStatusWindow() {
             // Propriétés de votre fenêtre
             width: 800,
             height: 600,
+            titleBarStyle: 'hidden',
             // Autres propriétés...
         });
 
+        // Masque les boutons de fenêtre macOS par défaut
+        serversStatusWindow.setWindowButtonVisibility(false);
+
         // Charger le fichier HTML ou une URL pour afficher l'état des serveurs
         serversStatusWindow.loadURL("https://status.royalcreeps.fr");
+
+        // Attacher un gestionnaire d'événements pour la fermeture de la fenêtre
+        serversStatusWindow.on('close', () => {
+            serversStatusWindow = null;
+        });
+
+        // Gestionnaire d'événements pour la touche Échap
+        serversStatusWindow.webContents.on('before-input-event', (event, input) => {
+            if (input.key === 'Escape') {
+                serversStatusWindow.close();
+            }
+        });
     } else {
         serversStatusWindow.focus();
     }
 }
+
+
+
 
 
 app.on('ready', createWindow);
