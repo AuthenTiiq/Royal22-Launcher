@@ -133,17 +133,24 @@ function createWindow() {
     Menu.setApplicationMenu(menu);
 }
 
-function openServersStatusWindow() {
-    const serversStatusWindow = new BrowserWindow({
-        // Propriétés de votre fenêtre
-        width: 800,
-        height: 600,
-        // Autres propriétés...
-    });
+let serversStatusWindow = null;
 
-    // Charger le fichier HTML ou une URL pour afficher l'état des serveurs
-    serversStatusWindow.loadFile('src/serversStatus.html');
+function openServersStatusWindow() {
+    if (serversStatusWindow === null || serversStatusWindow.closed) {
+        serversStatusWindow = new BrowserWindow({
+            // Propriétés de votre fenêtre
+            width: 800,
+            height: 600,
+            // Autres propriétés...
+        });
+
+        // Charger le fichier HTML ou une URL pour afficher l'état des serveurs
+        serversStatusWindow.loadURL("https://status.royalcreeps.fr");
+    } else {
+        serversStatusWindow.focus();
+    }
 }
+
 
 app.on('ready', createWindow);
 
