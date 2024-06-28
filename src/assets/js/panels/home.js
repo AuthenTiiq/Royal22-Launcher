@@ -6,6 +6,7 @@ import { config, database, logger, changePanel, appdata, setStatus, pkg, popup }
 
 const { Launch } = require('minecraft-java-core')
 const { shell, ipcRenderer } = require('electron')
+const { spawn } = require('child_process') 
 
 class Home {
     static id = "home";
@@ -240,9 +241,9 @@ class Home {
             memory: {
                 min: `${configClient.java_config.java_memory.min * 1024}M`,
                 max: `${configClient.java_config.java_memory.max * 1024}M`
-            }
+            },
         }
-
+        
         launch.Launch(opt);
 
         playInstanceBTN.style.display = "none"
