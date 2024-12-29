@@ -32,10 +32,11 @@ class Splash {
         let splashes = [
             { "message": "Je vois quelque chose en direction de...", "author": "Explorateur" },+
             { "message": "Et si ce n'était qu'un projet...", "author": "Explorateur" },
-            { "message": "Je le vois ! Oui ! C'est le Royaume !", "author": "Explorateur" },
             { "message": "Et si RoyalCreep's...", "author": "Inconnu" },
             { "message": "RoyalCreep's est née en 2013...", "author": "Inconnu" },
-            { "message": "Rapidité...", "author": "Inconnu" }
+            { "message": "Rapidité...", "author": "Inconnu" },
+            { "message": "Cela n'a jamais abouti...", "author": "Visiteur"}
+
         ];
         let splash = splashes[Math.floor(Math.random() * splashes.length)];
         this.splashMessage.textContent = splash.message;
