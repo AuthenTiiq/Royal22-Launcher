@@ -81,7 +81,7 @@ function createWindow() {
                 { label: "Retour à l'accueil", accelerator: 'CmdOrCtrl+5',},
                 { type:'separator' },
                 { label: 'Gérer mes comptes', click() { mainWindow.webContents.send('open-settings-panel'), mainWindow.webContents.send('open-settings-accounts');}, accelerator: 'CmdOrCtrl+Shift+A' },
-                { label: 'Se déconnecter', enabled: false },
+                { label: 'Se déconnecter', click() { mainWindow.webContents.send('open-settings-panel'), mainWindow.webContents.send('open-settings-accounts');},},
                 { type: 'separator' },
                 { label: 'Réglages', submenu: [
                     { label: 'Gestions des comptes', click() { mainWindow.webContents.send('open-settings-panel'), mainWindow.webContents.send('open-settings-accounts');}, accelerator: 'Shift+1'},
