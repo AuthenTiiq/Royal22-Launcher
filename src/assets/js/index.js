@@ -62,7 +62,7 @@ class Splash {
         });
 
         ipcRenderer.on('updateAvailable', () => {
-            this.setStatus(`Mise à jour disponible !<br>MacOS : royalcreeps.fr/launcher <br>`);
+            this.setStatus(`Mise à jour disponible !`);
             if (os.platform() == 'win32') ipcRenderer.send('start-update');
             else return this.dowloadUpdate();
         })
