@@ -116,6 +116,25 @@ img {
     opacity: 0;
 }
 
+.download-update {
+    position: absolute;
+    left: 25%; /* Aligne le bouton au centre */
+    margin-top: 20px; /* Ajoute un espacement supérieur */
+    width: 200px; /* Largeur du bouton */
+    font: normal normal bold 22px / 45px Poppins; /* Police et style */
+    color: var(--color); /* Couleur du texte */
+    border: 2px solid var(--color); /* Bordure définie */
+    border-radius: 15px; /* Coins arrondis */
+    background-color: transparent; /* Fond transparent par défaut */
+    transition: background-color .2s, color .2s; /* Effets de transition */
+}
+
+.download-update:hover {
+    background-color: var(--color); /* Change le fond en couleur principale au survol */
+    color: var(--background); /* Change la couleur du texte au survol */
+    cursor: pointer; /* Change le curseur pour indiquer un élément cliquable */
+}
+
 .message.opacity {
     opacity: 1;
 }
