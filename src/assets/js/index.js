@@ -30,12 +30,12 @@ class Splash {
 
     async startAnimation() {
         let splashes = [
-            { "message": "Je vois quelque chose en direction de...", "author": "Explorateur" },+
-            { "message": "Et si ce n'était qu'un projet...", "author": "Explorateur" },
-            { "message": "Et si RoyalCreep's...", "author": "Inconnu" },
-            { "message": "RoyalCreep's est née en 2013...", "author": "Inconnu" },
-            { "message": "Rapidité...", "author": "Inconnu" },
-            { "message": "Cela n'a jamais abouti...", "author": "Visiteur"}
+            { "message": "Je ne vois plus rien dans cette direction...", "author": "Explorateur" },+
+            { "message": "Ce n'était donc qu'un projet...", "author": "Explorateur" },
+            { "message": "Allons de l'avant désormais", "author": "Explorateur" },
+            { "message": "RoyalCreep's est née en 2013 !", "author": "Historien" },
+            { "message": "Rapidité...", "author": "AuthenTiiq" },
+            { "message": "Cela n'a jamais abouti...", "author": "Joueur nostalgique"}
 
         ];
         let splash = splashes[Math.floor(Math.random() * splashes.length)];
@@ -52,6 +52,7 @@ class Splash {
         this.message.classList.add("opacity");
         await sleep(100);
         this.checkUpdate();
+        await sleep(1000);
     }
 
     async checkUpdate() {
