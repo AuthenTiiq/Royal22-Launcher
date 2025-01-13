@@ -118,21 +118,21 @@ img {
 
 .download-update {
     position: absolute;
-    left: 25%; /* Aligne le bouton au centre */
-    margin-top: 20px; /* Ajoute un espacement supérieur */
-    width: 200px; /* Largeur du bouton */
-    font: normal normal bold 22px / 45px Poppins; /* Police et style */
-    color: var(--color); /* Couleur du texte */
-    border: 2px solid var(--color); /* Bordure définie */
-    border-radius: 15px; /* Coins arrondis */
-    background-color: transparent; /* Fond transparent par défaut */
-    transition: background-color .2s, color .2s; /* Effets de transition */
+    left: 25%; 
+    margin-top: 20px; 
+    width: 200px; 
+    font: normal normal bold 22px / 45px Poppins;
+    color: var(--color); 
+    border: 2px solid var(--color); 
+    border-radius: 15px; 
+    background-color: transparent; 
+    transition: background-color .2s, color .2s;
 }
 
 .download-update:hover {
-    background-color: var(--color); /* Change le fond en couleur principale au survol */
-    color: var(--background); /* Change la couleur du texte au survol */
-    cursor: pointer; /* Change le curseur pour indiquer un élément cliquable */
+    background-color: var(--color);
+    color: var(--background); 
+    cursor: pointer;
 }
 
 .message.opacity {
