@@ -52,14 +52,15 @@ img {
 
 .splash {
     position: absolute;
-    top: 100px;
+    top: 180px;
     left: 50%;
     transform: translate(-50%);
     width: 140px;
     height: 140px;
-    animation: bounce 2s infinite;
     transition: opacity .3s, top 1.5s;
     opacity: 0;
+    border-radius: 15px; /* Arrondi doux des coins */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .splash.opacity {
