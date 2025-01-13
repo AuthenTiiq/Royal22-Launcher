@@ -24,8 +24,8 @@ function createWindow() {
     destroyWindow();
     updateWindow = new BrowserWindow({
         title: "Démarrage de RoyalCreep's",
-        width: 400,
-        height: 500,
+        width: 600,
+        height: 400,
         resizable: false,
         icon: `./src/assets/images/icon.${os.platform() === "win32" ? "ico" : "png"}`,
         frame: false,

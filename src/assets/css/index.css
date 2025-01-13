@@ -2,9 +2,35 @@
 @import 'theme.css';
 
 body {
-    background-color: var(--background);
+    position: relative;
     font-family: "Poppins";
     letter-spacing: 0px;
+    overflow: hidden; /* Masque tout débordement inattendu */
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: -10px;
+    left: -10px;
+    width: calc(100% + 20px);
+    height: calc(100% + 20px);
+    background: url('../images/background.jpg') no-repeat center center fixed;
+    background-size: cover;
+    filter: blur(2px);
+    z-index: -1;
+    overflow: hidden;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: -1;
 }
 
 img {
@@ -12,13 +38,26 @@ img {
     user-select: none;
 }
 
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translate(-50%, 0);
+    }
+    40% {
+        transform: translate(-50%, -20px);
+    }
+    60% {
+        transform: translate(-50%, -10px);
+    }
+}
+
 .splash {
     position: absolute;
-    top: 180px;
+    top: 100px;
     left: 50%;
     transform: translate(-50%);
     width: 140px;
     height: 140px;
+    animation: bounce 2s infinite;
     transition: opacity .3s, top 1.5s;
     opacity: 0;
 }
@@ -28,14 +67,14 @@ img {
 }
 
 .splash.translate {
-    top: 129px;
+    top: 90px;
 }
 
 .splash-message {
     position: absolute;
-    top: 289px;
+    top: 250px;
     left: 0px;
-    width: 400px;
+    width: 600px;
     font: normal normal bold 19px/29px Poppins;
     text-align: center;
     letter-spacing: 0px;
@@ -50,18 +89,14 @@ img {
 
 .splash-author {
     position: absolute;
-    top: 326px;
+    top: 290px;
     left: 0px;
-    width: 400px;
+    width: 600px;
     text-align: center;
     transition: opacity 1.5s;
     font: normal normal normal 9px/13px Poppins;
     color: var(--color);
     opacity: 0;
-}
-
-.splash-author .author {
-    font: normal normal bold 9px/13px Poppins;
 }
 
 .splash-author.opacity {
@@ -70,32 +105,14 @@ img {
 
 .message {
     position: absolute;
-    top: 347px;
+    top: 310px;
     left: 0px;
-    width: 400px;
+    width: 600px;
     text-align: center;
     transition: opacity 1.5s;
     font: normal normal bold 18px/27px Poppins;
     color: var(--color);
     opacity: 0;
-}
-
-.download-update {
-    position: absolute;
-    left: 25%;
-    margin-top: 20px;
-    width: 200px;
-    font: normal normal bold 22px / 45px Poppins;
-    color: var(--color);
-    border: 2px solid var(--color);
-    border-radius: 15px;
-    transition: background-color .2s, color .2s;
-}
-
-.download-update:hover {
-    background-color: var(--color);
-    color: var(--background);
-    cursor: pointer;
 }
 
 .message.opacity {
@@ -104,8 +121,8 @@ img {
 
 .progress {
     position: absolute;
-    top: 410px;
-    left: 106px;
+    top: 350px;
+    left: 206px;
     width: 189px;
     height: 10px;
     appearance: none;
