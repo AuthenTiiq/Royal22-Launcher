@@ -5,7 +5,7 @@
 
 [<p align="center">]()
 ![GitHub all releases](https://img.shields.io/github/downloads/authentiiq/Royal22-Launcher/total?style=for-the-badge)
-![Discord](https://img.shields.io/discord/819729377650278420?style=for-the-badge)
+![Discord](https://img.shields.io/discord/575569755205926912?style=for-the-badge)
 ![GitHub package.json version](https://img.shields.io/github/package-json/v/authentiiq/Royal22-Launcher?style=for-the-badge)
 [<p align="center">]()
 ![GitHub forks](https://img.shields.io/github/forks/authentiiq/Royal22-Launcher?style=for-the-badge)
