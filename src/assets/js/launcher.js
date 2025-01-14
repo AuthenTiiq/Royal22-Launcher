@@ -49,44 +49,6 @@ class Launcher {
         new logger(pkg.name, '#7289da')
     }
 
-    async initBackground() {
-        const video = document.getElementById("background-video");
-    
-        const changeSource = (url) => {
-            const video = document.getElementById("background-video");
-            console.log("Chargement du background RoyalCreeps : ", url);
-            video.src = url;
-            video.poster = ""; // Réinitialise le poster
-            video.load(); // Charge la nouvelle source
-            video.onloadeddata = () => {
-                // console.log("La vidéo est chargée, en train de jouer...");
-                video.play(); // Lance la lecture une fois la vidéo chargée
-            };
-        };
-        
-    
-        const getVideoUrl = () => {
-            const hour = new Date().getHours();
-            if (hour >= 6 && hour < 18) {
-                return "https://data.royalcreeps.fr/launcher/r22launcher/background/royalcreeps-background-bleu-jour.mov";
-            } else {
-                return "https://data.royalcreeps.fr/launcher/r22launcher/background/royalcreeps-background-bleu-nuit.mov";
-            }
-        };
-    
-        const updateVideo = () => {
-            const currentUrl = video.src;
-            const newUrl = getVideoUrl();
-            if (currentUrl !== newUrl) {
-                changeSource(newUrl);
-            }
-        };
-        
-    
-        updateVideo();
-        setInterval(updateVideo, 60000);
-    }
-
     shortcut() {
         document.addEventListener('keydown', e => {
             if (e.ctrlKey && e.keyCode == 87) {
