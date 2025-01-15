@@ -10,13 +10,33 @@ const { spawn } = require('child_process')
 
 class Home {
     static id = "home";
+
     async init(config) {
         this.config = config;
         this.db = new database();
-        this.news()
-        this.socialLick()
-        this.instancesSelect()
-        document.querySelector('.settings-btn').addEventListener('click', e => changePanel('settings'))
+        this.news();
+        this.socialLick();
+        this.instancesSelect();
+
+        // Ajoutez les écouteurs pour les boutons
+        document.querySelector('.settings-btn').addEventListener('click', e => this.changePanelWithTransition('settings'));
+        document.querySelector('.player-options').addEventListener('click', e => this.changePanelWithTransition('settings'));
+    }
+
+    /**
+     * Change de panneau avec une transition.
+     * @param {string} panelId - L'identifiant du panneau à afficher.
+     */
+    changePanelWithTransition(panelId) {
+        const transitionElement = document.querySelector('.page-transition');
+        // Démarre l'animation
+        transitionElement.classList.add('active');
+
+        // Attends la fin de l'animation avant de changer de panneau
+        setTimeout(() => {
+            changePanel(panelId); // Appelez votre méthode existante
+            transitionElement.classList.remove('active'); // Optionnel, pour réutilisation
+        }, 500); // Durée de la transition CSS
     }
 
     async news() {
