@@ -411,3 +411,26 @@
 .active-close {
     border: 4px solid var(--element-color);
 }
+
+.page-transition {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--background);
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.page-transition.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.page-transition.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
