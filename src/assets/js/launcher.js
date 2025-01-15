@@ -28,7 +28,6 @@ class Launcher {
         await this.initConfigClient();
         this.createPanels(Login, Home, Settings);
         this.startLauncher();
-        this.initBackground();
         ipcRenderer.on('open-settings-panel', () => {
             this.showSettingsPanel();
         });
