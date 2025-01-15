@@ -50,9 +50,9 @@ class Splash {
         this.splashMessage.classList.add("opacity");
         this.splashAuthor.classList.add("opacity");
         this.message.classList.add("opacity");
-        await sleep(1500);
+        await sleep(2000);
         this.checkUpdate();
-        await sleep(1000);
+        await sleep(1500);
     }
 
     async checkUpdate() {
@@ -129,6 +129,7 @@ class Splash {
     startLauncher() {
         this.setStatus(`Démarrage du launcher`);
         ipcRenderer.send('main-window-open');
+        sleep(500);
         ipcRenderer.send('update-window-close');
     }
 
