@@ -65,7 +65,7 @@ class Index {
                 generateUpdatesFilesForAllChannels: false,
                 appId: preductname,
                 productName: preductname,
-                copyright: 'Copyright © 2020-2025 Luuxis (Edited by AuthenTiiq)',
+                copyright: 'Copyright © 2020-2025 Luuxis, \nRoyalCreeps Version by AuthenTiiq',
                 artifactName: "${productName}-${os}-${arch}.${ext}",
                 extraMetadata: { main: 'app/app.js' },
                 files: ["app/**/*", "package.json", "LICENSE.md"],
