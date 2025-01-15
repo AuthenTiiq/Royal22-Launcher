@@ -6,7 +6,6 @@ import { config, database, logger, changePanel, appdata, setStatus, pkg, popup }
 
 const { Launch } = require('minecraft-java-core')
 const { shell, ipcRenderer } = require('electron')
-const { spawn } = require('child_process') 
 
 class Home {
     static id = "home";
