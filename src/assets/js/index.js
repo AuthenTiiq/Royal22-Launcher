@@ -50,7 +50,7 @@ class Splash {
         this.splashMessage.classList.add("opacity");
         this.splashAuthor.classList.add("opacity");
         this.message.classList.add("opacity");
-        await sleep(100);
+        await sleep(1500);
         this.checkUpdate();
         await sleep(1000);
     }
