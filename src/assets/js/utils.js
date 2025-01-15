@@ -20,10 +20,9 @@ import slider from './utils/slider.js';
 
 async function setBackground(theme) {
     if (typeof theme == 'undefined') {
-        let databaseLauncher = new database();
-        let configClient = await databaseLauncher.readData('configClient');
-        theme = configClient?.launcher_config?.theme || "auto"
-        theme = await ipcRenderer.invoke('is-dark-theme', theme).then(res => res)
+        const hour = new Date().getHours();
+        theme = hour >= 6 && hour < 18 ? "light" : "dark"; // "light" entre 6h et 18h, sinon "dark"
+
     }
     let background
     let body = document.body;
