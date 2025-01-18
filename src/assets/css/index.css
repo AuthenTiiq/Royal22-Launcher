@@ -6,6 +6,7 @@ body {
     font-family: "Poppins";
     letter-spacing: 0px;
     overflow: hidden; /* Masque tout débordement inattendu */
+    text-align: center;
 }
 
 body::before {
@@ -54,17 +55,18 @@ img {
 @keyframes wave {
     0% {
         transform: scale(1);
-        opacity: 0.5;
+        opacity: 0.7; /* Rendre la vague plus visible au début */
     }
     100% {
-        transform: scale(1.5);
-        opacity: 0;
+        transform: scale(2); /* Agrandir davantage pour un effet plus marqué */
+        opacity: 0; /* Disparaît complètement à la fin */
     }
 }
 
+
 .splash {
     position: absolute;
-    top: 100px;
+    top: 90px;
     left: 40%;
     transform: translate(-50%);
     width: 120px;
@@ -81,17 +83,17 @@ img {
 }
 
 .splash.translate {
-    top: 60px;
+    top: 50px;
 }
 
 /* Ajout de l'effet de vague derrière la splash */
 .splash::before {
     content: '';
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 100%;
-    height: 100%;
+    top: 50%; /* Centre verticalement */
+    left: 50%; /* Centre horizontalement */
+    width: 150%; /* Taille relative à .splash */
+    height: 150%; /* Taille relative à .splash */
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.3); /* Vague blanche translucide */
     animation: wave 2s infinite ease-out; /* Animation de vague */
@@ -102,7 +104,7 @@ img {
 
 .splash-message {
     position: absolute;
-    top: 200px;
+    top: 180px;
     left: 0px;
     width: 600px;
     font: normal normal bold 19px/29px Poppins;
@@ -119,7 +121,7 @@ img {
 
 .splash-author {
     position: absolute;
-    top: 240px;
+    top: 220px;
     left: 0px;
     width: 600px;
     text-align: center;
@@ -135,7 +137,7 @@ img {
 
 .message {
     position: absolute;
-    top: 260px;
+    top: 240px;
     left: 0px;
     width: 600px;
     text-align: center;
@@ -192,4 +194,42 @@ img {
 .progress::-webkit-progress-value {
     background-color: var(--element-color);
     border-radius: 10px;
+}
+
+.retry-btn{
+    position: absolute;
+    left: 38%; 
+    margin-top: 10px; 
+    width: 140px; 
+    font: normal normal bold 22px / 35px Poppins;
+    color: var(--color); 
+    border: 2px solid var(--color); 
+    border-radius: 8px; 
+    background-color: transparent; 
+    transition: background-color .2s, color .2s;
+}
+
+.retry-btn:hover {
+    background-color: var(--color);
+    color: var(--background); 
+    cursor: pointer;
+}
+
+.exit-btn{
+    position: absolute;
+    left: 38%; 
+    margin-top: 10px; 
+    width: 140px; 
+    font: normal normal bold 22px / 35px Poppins;
+    color: #b73030; 
+    border: 2px solid #b73030; 
+    border-radius: 8px; 
+    background-color: transparent; 
+    transition: background-color .2s, color .2s;
+}
+
+.exit-btn:hover {
+    background-color: #b73030;
+    color: #f6f6f6;
+    cursor: pointer;
 }

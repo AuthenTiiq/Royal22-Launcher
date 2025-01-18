@@ -118,12 +118,21 @@ class Splash {
 
     async maintenanceCheck() {
         config.GetConfig().then(res => {
-            if (res.maintenance) return this.shutdown(res.maintenance_message);
+            // Si blackout est activé, bloquer la connexion au serveur
+            if (res.flags?.blackout) return this.showBlackout();
+
+            // Si closed est activé, fermer le launcher (utiliser lors d'incident majeur)
+            if (res.closed) return this.retry(res.closed_message, false);
+    
+            // Si maintenance est activée, arrêter le launcher
+            if (res.maintenance) return this.retry(res.maintenance_message, false);
+    
+            // Sinon, démarrer le launcher
             this.startLauncher();
         }).catch(e => {
             console.error(e);
-            return this.shutdown("Aucune connexion internet détectée,<br>veuillez réessayer ultérieurement.");
-        })
+            return this.retry("Aucune connexion internet détectée", true);
+        });
     }
 
     startLauncher() {
@@ -140,6 +149,26 @@ class Splash {
             this.setStatus(`${text}<br>Arrêt dans ${i--}s`);
             if (i < 0) ipcRenderer.send('update-window-close');
         }, 1000);
+    }
+
+    goodbye(text) {
+        this.setStatus(`${text}`);
+        sleep(2500);
+        ipcRenderer.send('update-window-close');
+    }
+     
+    retry(text, showRetry = true) {
+        // Construire le contenu dynamique
+        const retryButton = showRetry ? `<div class="retry-btn">Réessayer</div>` : '';
+        const exitButton = `<div class="exit-btn">Quitter</div>`;
+    
+        // Mettre à jour le statut
+        this.setStatus(`${text}<br>${retryButton}<br><br>${exitButton}`);
+    
+        // Ajouter les événements conditionnels
+        showRetry && document.querySelector(".retry-btn")?.addEventListener("click", () => this.checkUpdate());
+        document.querySelector(".exit-btn")?.addEventListener("click", () => this.goodbye("À bientôt !"));
+            
     }
 
     setStatus(text) {
