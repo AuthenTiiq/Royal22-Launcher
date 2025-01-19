@@ -2,7 +2,7 @@
 name: Launcher Build
 on:
   push:
-    branches: [ master, feature/macGameMode ]
+    branches: [ master ]
 
 jobs:
   create-release:
@@ -31,7 +31,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-14, ubuntu-latest, windows-latest]
+        os: [macos-15, ubuntu-latest, windows-latest]
 
     steps:
       - name: Check out Git repository
