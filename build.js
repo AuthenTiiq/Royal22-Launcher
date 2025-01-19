@@ -100,10 +100,6 @@ class Index {
                         arch: "universal"
                     },
                     {
-                        target: "zip",
-                        arch: "universal"
-                    },
-                    {
                         target: "pkg",
                         arch: "universal"
                     }
