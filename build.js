@@ -91,6 +91,7 @@ class Index {
                 },
                 mac: {
                     icon: "./app/assets/images/icon.icns",
+                    appId: "com.mojang.minecraftlauncher",
                     category: "public.app-category.games",
                     identity: null,
                     hardenedRuntime: true,
@@ -106,7 +107,9 @@ class Index {
                         target: "pkg",
                         arch: "universal"
                     }
-                ]
+                    
+                ],
+                artifactName: "${productName}-mac-${arch}.${ext}"
                 },
                 linux: {
                     icon: "./app/assets/images/icon.png",
