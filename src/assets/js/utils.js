@@ -20,25 +20,37 @@ import slider from './utils/slider.js';
 
 async function setBackground(theme) {
     if (typeof theme == 'undefined') {
-        const hour = new Date().getHours();
-        theme = hour >= 6 && hour < 18 ? "light" : "dark"; // "light" entre 6h et 18h, sinon "dark"
-
+        let databaseLauncher = new database();
+        let configClient = await databaseLauncher.readData('configClient');
+        theme = configClient?.launcher_config?.theme || "auto";
+        theme = await ipcRenderer.invoke('is-dark-theme', theme).then(res => res);
     }
-    let background
+    let background;
     let body = document.body;
     body.className = theme ? 'dark global' : 'light global';
+
+    // Background color depending on the time of day
+    let themeBg;
+    const hour = new Date().getHours();
+    themeBg = hour >= 6 && hour < 18 ? "light" : "dark"; // "light" entre 6h et 18h, sinon "dark"
+
+    console.log("themeBG :" + themeBg);
+
     if (fs.existsSync(`${__dirname}/assets/images/background/easterEgg`) && Math.random() < 0.005) {
         let backgrounds = fs.readdirSync(`${__dirname}/assets/images/background/easterEgg`);
         let Background = backgrounds[Math.floor(Math.random() * backgrounds.length)];
         background = `url(./assets/images/background/easterEgg/${Background})`;
-    } else if (fs.existsSync(`${__dirname}/assets/images/background/${theme ? 'dark' : 'light'}`)) {
-        let backgrounds = fs.readdirSync(`${__dirname}/assets/images/background/${theme ? 'dark' : 'light'}`);
+    } else if (fs.existsSync(`${__dirname}/assets/images/background/${themeBg === 'light' ? 'light' : 'dark'}`)) {
+        let backgrounds = fs.readdirSync(`${__dirname}/assets/images/background/${themeBg === 'light' ? 'light' : 'dark'}`);
+        console.log(backgrounds);
         let Background = backgrounds[Math.floor(Math.random() * backgrounds.length)];
-        background = `linear-gradient(#00000080, #00000080), url(./assets/images/background/${theme ? 'dark' : 'light'}/${Background})`;
+        background = `linear-gradient(#00000080, #00000080), url(./assets/images/background/${themeBg === 'light' ? 'light' : 'dark'}/${Background})`;
+        console.log(background);
     }
     body.style.backgroundImage = background ? background : theme ? '#000' : '#fff';
     body.style.backgroundSize = 'cover';
 }
+
 
 async function changePanel(id) {
     let panel = document.querySelector(`.${id}`);
