@@ -1,33 +1,52 @@
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="Content-Security-Policy" content="script-src 'self';">
-        <link rel="stylesheet" href="assets/css/launcher.css">
-    </head>
 
-    <div class="backgroundVideo">
-        <video id="background-video" autoplay loop muted poster="assets/images/background/royal.jpg" src="">
-        </video>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self';">
+    <link rel="stylesheet" href="assets/css/launcher.css">
+</head>
+
+<div class="backgroundVideo">
+    <video id="background-video" autoplay loop muted poster="assets/images/background/royal.jpg" src="">
+    </video>
+</div>
+
+<body class="dfvf">
+    <div class="dragbar"></div>
+    <div class="frame">
+        <div id="minimize" class="button-frame icon-minimize"></div>
+        <div id="maximize" class="button-frame icon-maximize"></div>
+        <div id="close" class="button-frame icon-close"></div>
     </div>
 
-    <body class="dfvf">
-        <div class="dragbar"></div>
-        <div class="frame">
-            <div id="minimize" class="button-frame icon-minimize"></div>
-            <div id="maximize" class="button-frame icon-maximize"></div>
-            <div id="close" class="button-frame icon-close"></div>
-        </div>
-
-        <div class="popup">
-            <div class="popup-tab">
-                <div class="popup-title"></div>
-                <div class="popup-content"></div>
-                <div class="popup-options">
-                    <button class="popup-button">OK</button>
-                </div>
+    <div class="popup">
+        <div class="popup-tab">
+            <div class="popup-title"></div>
+            <div class="popup-content"></div>
+            <div class="popup-options">
+                <button class="popup-button">OK</button>
             </div>
         </div>
+    </div>
+
+    <div class="app-layout">
+        <nav class="sidebar-global">
+            <div class="sidebar-logo">
+                <img src="assets/images/icon.png" alt="Logo">
+            </div>
+            <div class="nav-links">
+                <div id="nav-home" class="nav-item active" title="Accueil">
+                    <i class="icon-monitor"></i>
+                </div>
+                <div id="nav-settings" class="nav-item" title="Paramètres">
+                    <i class="icon-settings"></i>
+                </div>
+            </div>
+
+        </nav>
         <div class="panels"></div>
-        <script src="assets/js/launcher.js" type="module"></script>
-    </body>
+    </div>
+    <script src="assets/js/launcher.js" type="module"></script>
+</body>
+
 </html>

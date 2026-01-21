@@ -30,7 +30,7 @@ class Splash {
 
     async startAnimation() {
         let splashes = [
-            { "message": "Je vois quelque chose en direction de...", "author": "Explorateur" },+
+            { "message": "Je vois quelque chose en direction de...", "author": "Explorateur" }, +
             { "message": "Et si ce n'était qu'un projet...", "author": "Explorateur" },
             { "message": "Je le vois ! Oui ! C'est le Royaume !", "author": "Explorateur" },
             { "message": "Et si RoyalCreep's...", "author": "Inconnu" },

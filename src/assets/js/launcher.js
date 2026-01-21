@@ -27,12 +27,32 @@ class Launcher {
         this.db = new database();
         await this.initConfigClient();
         this.createPanels(Login, Home, Settings);
+        this.initGlobalNavigation();
         this.startLauncher();
         this.initBackground();
         ipcRenderer.on('open-settings-panel', () => {
             this.showSettingsPanel();
         });
 
+    }
+
+    initGlobalNavigation() {
+        document.getElementById('nav-home').addEventListener('click', () => {
+            changePanel('home');
+            this.updateNavState('nav-home');
+        });
+
+        document.getElementById('nav-settings').addEventListener('click', () => {
+            changePanel('settings');
+            this.updateNavState('nav-settings');
+        });
+
+
+    }
+
+    updateNavState(activeId) {
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        document.getElementById(activeId).classList.add('active');
     }
 
     showSettingsPanel() {
@@ -51,7 +71,7 @@ class Launcher {
 
     async initBackground() {
         const video = document.getElementById("background-video");
-    
+
         const changeSource = (url) => {
             const video = document.getElementById("background-video");
             console.log("Chargement du background RoyalCreeps : ", url);
@@ -63,8 +83,8 @@ class Launcher {
                 video.play(); // Lance la lecture une fois la vidéo chargée
             };
         };
-        
-    
+
+
         const getVideoUrl = () => {
             const hour = new Date().getHours();
             if (hour >= 6 && hour < 18) {
@@ -73,7 +93,7 @@ class Launcher {
                 return "https://data.royalcreeps.fr/launcher/r22launcher/background/royalcreeps-background-bleu-nuit.mov";
             }
         };
-    
+
         const updateVideo = () => {
             const currentUrl = video.src;
             const newUrl = getVideoUrl();
@@ -81,8 +101,8 @@ class Launcher {
                 changeSource(newUrl);
             }
         };
-        
-    
+
+
         updateVideo();
         setInterval(updateVideo, 60000);
     }
@@ -222,7 +242,7 @@ class Launcher {
                     let refresh_accounts = await new AZauth(this.config.online).verify(account);
 
                     if (refresh_accounts.error) {
-                        this.db.deleteData('accounts', account_ID)  
+                        this.db.deleteData('accounts', account_ID)
                         if (account_ID == account_selected) {
                             configClient.account_selected = null
                             this.db.updateData('configClient', configClient)
