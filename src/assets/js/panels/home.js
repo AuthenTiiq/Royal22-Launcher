@@ -155,7 +155,9 @@ class Home {
                 configClient.instance_selct = newInstanceSelect
                 await this.db.updateData('configClient', configClient)
                 instanceSelect = instancesList.filter(i => i.name == newInstanceSelect)
-                instancePopup.style.display = 'none'
+                instanceSelect = instancesList.filter(i => i.name == newInstanceSelect)
+                instancePopup.classList.remove('active');
+                setTimeout(() => instancePopup.style.display = 'none', 300);
                 let instance = await config.getInstanceList()
                 let options = instance.find(i => i.name == configClient.instance_selct)
                 await setStatus(options.status)
@@ -190,12 +192,16 @@ class Home {
                 }
 
                 instancePopup.style.display = 'flex'
+                requestAnimationFrame(() => instancePopup.classList.add('active'));
             }
 
             if (!e.target.classList.contains('instance-select')) this.startGame()
         })
 
-        instanceCloseBTN.addEventListener('click', () => instancePopup.style.display = 'none')
+        instanceCloseBTN.addEventListener('click', () => {
+            instancePopup.classList.remove('active');
+            setTimeout(() => instancePopup.style.display = 'none', 300);
+        })
     }
 
     async startGame() {

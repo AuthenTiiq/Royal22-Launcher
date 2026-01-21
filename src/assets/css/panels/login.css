@@ -7,11 +7,15 @@
 
 .login-tabs {
     position: absolute;
-    padding: 15px;
-    background: var(--background);
-    border-radius: 15px;
+    padding: 2rem;
+    background: var(--background-glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 20px;
     text-align: center;
     min-width: 40%;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .login-home,
@@ -29,22 +33,41 @@
 .cancel {
     background: none;
     color: var(--color);
-    border: solid 4px var(--element-color);
-    border-radius: 10px;
-    padding: 0.3rem 4rem;
+    border: solid 2px var(--element-color);
+    border-radius: 12px;
+    padding: 0.5rem 3rem;
     font-size: inherit;
     font-weight: bold;
     margin: 15px 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.connect:hover,
+.cancel:hover {
+    background: var(--element-color);
+    color: white;
+    box-shadow: 0 0 15px var(--element-color);
+    transform: translateY(-2px);
 }
 
 .input-login .email,
 .input-login .password,
 .A2F {
     color: var(--color);
-    background: none;
+    background: rgba(255, 255, 255, 0.05);
     border: solid 2px var(--element-color);
     border-radius: 30px;
-    width: 50%;
-    padding: 0.4rem 1rem;
-    margin-top: 10px;
+    width: 60%;
+    padding: 0.6rem 1.2rem;
+    margin-top: 15px;
+    transition: all 0.3s ease;
+}
+
+.input-login .email:focus,
+.input-login .password:focus,
+.A2F:focus {
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 10px var(--element-color);
+    width: 65%;
 }

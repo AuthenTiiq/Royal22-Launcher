@@ -12,6 +12,8 @@
     --background-transparent: #2c2c2ccc;
     --shadow: rgba(25, 25, 25, 0.7);
     --svg-color: brightness(0) saturate(100%) invert(100%) sepia(55%) saturate(23%) hue-rotate(236deg) brightness(108%) contrast(92%);
+    --background-glass: rgba(41, 41, 41, 0.7);
+    --shadow-soft: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .light {
@@ -21,4 +23,6 @@
     --background-transparent: rgba(204, 204, 204, 0.8);
     --shadow: rgba(208, 208, 208, 0.7);
     --svg-color: brightness(0) saturate(100%) invert(0%) sepia(5%) saturate(1719%) hue-rotate(357deg) brightness(94%) contrast(84%);
+    --background-glass: rgba(245, 245, 245, 0.7);
+    --shadow-soft: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
 }

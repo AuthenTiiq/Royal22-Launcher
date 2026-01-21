@@ -16,14 +16,18 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: var(--background);
+    background: var(--background-glass);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     width: 25rem;
     height: 3rem;
     color: var(--color);
-    border-radius: 10px;
+    border-radius: 15px;
     margin-top: 3rem;
     padding: 1rem;
     text-align: center;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .server-status-icon {
@@ -96,10 +100,12 @@
 .titre-tab-new {
     margin-top: 1rem;
     font-size: 2rem;
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 1.5rem;
     border-radius: 2rem;
-    background: var(--background-transparent);
+    background: var(--background-glass);
+    backdrop-filter: blur(8px);
     color: var(--color);
+    box-shadow: var(--shadow-soft);
 }
 
 .news-list {
@@ -112,8 +118,16 @@
 .news-block {
     width: 100%;
     margin: 0 0 1rem 0;
-    border-radius: 10px;
-    background: var(--background-transparent);
+    border-radius: 15px;
+    background: var(--background-glass);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.news-block:hover {
+    transform: translateY(-2px);
 }
 
 .news-header {
@@ -183,15 +197,23 @@
 
 .social-block {
     display: flex;
-    background: var(--background-transparent);
+    background: var(--background-glass);
+    backdrop-filter: blur(5px);
     width: 90px;
     height: 90px;
     margin-bottom: 1rem;
-    border-radius: 10px;
+    border-radius: 15px;
     font-size: 2rem;
     cursor: pointer;
     align-items: center;
     justify-content: center;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.social-block:hover {
+    transform: scale(1.05);
+    background: var(--element-color);
 }
 
 .social-block .icon-social {
@@ -214,7 +236,9 @@
     align-items: center;
     width: 100%;
     height: 90px;
-    background: var(--background-transparent);
+    background: var(--background-glass);
+    backdrop-filter: blur(15px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .player-options {
@@ -254,10 +278,15 @@
     justify-content: space-between;
     align-items: center;
     position: relative;
-    border: solid 3px var(--element-color);
+    border: solid 2px var(--element-color);
     border-radius: 15px;
-    height: 3.2rem;
+    height: 3.5rem;
     padding-right: 1.9rem;
+    transition: all 0.2s ease;
+}
+
+.play-instance:hover {
+    box-shadow: 0 0 15px var(--element-color);
 }
 
 .play-btn {
@@ -327,19 +356,29 @@
     display: none;
     width: 100%;
     height: 100%;
-    background: #000000b3;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
     z-index: 10;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.instance-popup.active {
+    opacity: 1;
 }
 
 .instances-tab {
     position: relative;
-    background: var(--background);
-    border-radius: 10px;
-    padding: 1rem 3rem;
+    background: var(--background-glass);
+    backdrop-filter: blur(15px);
+    border-radius: 20px;
+    padding: 2rem 4rem;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .close-popup {
