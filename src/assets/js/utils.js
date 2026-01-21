@@ -43,8 +43,8 @@ async function setBackground(theme) {
 
 async function changePanel(id) {
     let panel = document.querySelector(`.${id}`);
-    let active = document.querySelector(`.active`)
-    if (active) active.classList.toggle("active");
+    let active = document.querySelector('.panel.active');
+    if (active) active.classList.remove("active");
     panel.classList.add("active");
 }
 
@@ -78,6 +78,12 @@ async function accountSelect(data) {
     if (activeAccount) activeAccount.classList.toggle('account-select');
     account.classList.add('account-select');
     if (data?.profile?.skins[0]?.base64) headplayer(data.profile.skins[0].base64);
+
+    // Update username in header
+    let usernameElement = document.querySelector('.profile-pseudo');
+    if (usernameElement) {
+        usernameElement.textContent = data.name;
+    }
 }
 
 async function headplayer(skinBase64) {

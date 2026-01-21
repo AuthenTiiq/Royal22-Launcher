@@ -1,60 +1,59 @@
 <div class="container">
-    <div class="status-server">
-        <img class="server-status-icon" src="assets/images/icon.png">
-        <div class="server-status-infos">
-            <div class="server-status-name">Minecraft</div>
-            <div class="server-status-text">operationeel - 0 ms</div>
+    <div class="dashboard-header">
+        <div class="server-status-pill status-player-count">
+            <div class="status-indicator"></div>
+            <div class="server-info">
+                <span class="server-name server-status-name">Minecraft</span>
+                <span class="server-players server-status-text"><span class="player-count">0</span> / 100</span>
+            </div>
         </div>
-        <div class="status-player-count">
-            <div class="player-count">0</div>
+        <div class="user-profile-pill">
+            <span class="user-name profile-pseudo">Pseudo</span>
+            <div class="user-avatar profile-head player-head"></div>
+            <div class="user-dropdown">
+                <!-- Dropdown content if needed, e.g. logout -->
+            </div>
         </div>
     </div>
 
-    <div class="home-bottom">
-        <div class="new-tab">
-            <div class="titre-tab-new">Actualités</div>
-            <div class="news-list content-scroll"></div>
+    <div class="dashboard-main">
+        <div class="news-container content-scroll">
+            <h2 class="section-title">Actualités</h2>
+            <div class="news-grid news-list">
+                <!-- News items injected here -->
+            </div>
         </div>
-        <div class="social-tab">
-            <div class="social-list content-scroll">
-                <div data-url="https://discord.gg/dKCzBkT" class="social-block">
-                    <div class="icon-discord icon-social"></div>
+        <div class="social-links-area">
+            <div class="social-list">
+                <div data-url="https://discord.gg/dKCzBkT" class="social-pill">
+                    <div class="icon-social icon-discord"></div>
                 </div>
-
-                <div data-url="https://twitter.com/RoyalCreepsPVP" class="social-block">
-                    <div class="icon-twitter icon-social"></div>
+                <div data-url="https://twitter.com/RoyalCreepsPVP" class="social-pill">
+                    <div class="icon-social icon-twitter"></div>
                 </div>
-
-                <div data-url="https://fr-fr.facebook.com/royalcreeps/" class="social-block">
-                    <div class="icon-facebook icon-social"></div>
+                <div data-url="https://fr-fr.facebook.com/royalcreeps/" class="social-pill">
+                    <div class="icon-social icon-facebook"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="sidebar">
-        <div class="player-options">
-            <div class="player-head"></div>
-        </div>
-
-        <div class="play-elements">
+    <div class="play-dock">
+        <div class="play-wrapper">
             <div class="play-instance">
-                <button class="play-btn">Jouer</button>
-                <div class="instance-select icon-arrow"></div>
+                <button class="play-btn">JOUER</button>
             </div>
             <div class="info-starting-game">
                 <div class="info-starting-game-text">Connexion...</div>
                 <progress value="0" max="0" class="progress-bar"></progress>
             </div>
         </div>
-
-        <div class="settings-btn icon-settings"></div>
     </div>
 
-    <div class="instance-popup">
+    <div class="instance-popup" style="display: none;">
         <div class="instances-tab">
             <div class="close-popup icon-close"></div>
-            <p>Choisissez votre instance...</p>
+            <p>Choisissez votre instance</p>
             <div class="instances-List"></div>
         </div>
     </div>

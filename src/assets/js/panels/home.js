@@ -13,10 +13,10 @@ class Home {
     async init(config) {
         this.config = config;
         this.db = new database();
+        // Remove settings btn listener since it's global now
         this.news()
         this.socialLick()
         this.instancesSelect()
-        document.querySelector('.settings-btn').addEventListener('click', e => changePanel('settings'))
     }
 
     async news() {
@@ -47,22 +47,19 @@ class Home {
                 for (let News of news) {
                     let date = this.getdate(News.publish_date)
                     let blockNews = document.createElement('div');
-                    blockNews.classList.add('news-block');
+                    blockNews.className = 'news-block';
                     blockNews.innerHTML = `
                         <div class="news-header">
-                            <img class="server-status-icon" src="assets/images/icon.png">
+                            <img src="assets/images/icon.png">
                             <div class="header-text">
                                 <div class="title">${News.title}</div>
-                            </div>
-                            <div class="date">
-                                <div class="day">${date.day}</div>
-                                <div class="month">${date.month}</div>
+                                <div class="date-small" style="font-size:0.8rem; opacity:0.7;">${date.day} ${date.month}</div>
                             </div>
                         </div>
                         <div class="news-content">
                             <div class="bbWrapper">
-                                <p>${News.content.replace(/\n/g, '</br>')}</p>
-                                <p class="news-author">Auteur - <span>${News.author}</span></p>
+                                <p>${News.content.replace(/\n/g, '</br>').substring(0, 150) + '...'}</p>
+                                <p class="news-author">Publié par <span>${News.author}</span></p>
                             </div>
                         </div>`
                     newsElement.appendChild(blockNews);
@@ -92,7 +89,7 @@ class Home {
     }
 
     socialLick() {
-        let socials = document.querySelectorAll('.social-block')
+        let socials = document.querySelectorAll('.social-pill')
 
         socials.forEach(social => {
             social.addEventListener('click', e => {
@@ -113,8 +110,8 @@ class Home {
         let instanceCloseBTN = document.querySelector('.close-popup')
 
         if (instancesList.length === 1) {
-            document.querySelector('.instance-select').style.display = 'none'
-            instanceBTN.style.paddingRight = '0'
+            // Instance selector removed from UI - only one instance exists
+            // No need to hide selector button
         }
 
         if (!instanceSelect) {
@@ -155,7 +152,9 @@ class Home {
                 configClient.instance_selct = newInstanceSelect
                 await this.db.updateData('configClient', configClient)
                 instanceSelect = instancesList.filter(i => i.name == newInstanceSelect)
-                instancePopup.style.display = 'none'
+                instanceSelect = instancesList.filter(i => i.name == newInstanceSelect)
+                instancePopup.classList.remove('active');
+                setTimeout(() => instancePopup.style.display = 'none', 300);
                 let instance = await config.getInstanceList()
                 let options = instance.find(i => i.name == configClient.instance_selct)
                 await setStatus(options.status)
@@ -163,39 +162,14 @@ class Home {
         })
 
         instanceBTN.addEventListener('click', async e => {
-            let configClient = await this.db.readData('configClient')
-            let instanceSelect = configClient.instance_selct
-            let auth = await this.db.readData('accounts', configClient.account_selected)
-
-            if (e.target.classList.contains('instance-select')) {
-                instancesListPopup.innerHTML = ''
-                for (let instance of instancesList) {
-                    if (instance.whitelistActive) {
-                        instance.whitelist.map(whitelist => {
-                            if (whitelist == auth?.name) {
-                                if (instance.name == instanceSelect) {
-                                    instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements active-instance">${instance.name}</div>`
-                                } else {
-                                    instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements">${instance.name}</div>`
-                                }
-                            }
-                        })
-                    } else {
-                        if (instance.name == instanceSelect) {
-                            instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements active-instance">${instance.name}</div>`
-                        } else {
-                            instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements">${instance.name}</div>`
-                        }
-                    }
-                }
-
-                instancePopup.style.display = 'flex'
-            }
-
-            if (!e.target.classList.contains('instance-select')) this.startGame()
+            // Only one instance exists, just start the game
+            this.startGame();
         })
 
-        instanceCloseBTN.addEventListener('click', () => instancePopup.style.display = 'none')
+        instanceCloseBTN.addEventListener('click', () => {
+            instancePopup.classList.remove('active');
+            setTimeout(() => instancePopup.style.display = 'none', 300);
+        })
     }
 
     async startGame() {
@@ -246,8 +220,14 @@ class Home {
 
         launch.Launch(opt);
 
-        playInstanceBTN.style.display = "none"
-        infoStartingBOX.style.display = "block"
+        playInstanceBTN.classList.add('hidden');
+        setTimeout(() => {
+            infoStartingBOX.style.display = "flex";
+            // Force reflow
+            void infoStartingBOX.offsetWidth;
+            infoStartingBOX.classList.add('visible');
+        }, 300); // Wait for transition out
+
         progressBar.style.display = "";
         ipcRenderer.send('main-window-progress-load')
 
@@ -303,8 +283,14 @@ class Home {
                 ipcRenderer.send("main-window-show")
             };
             ipcRenderer.send('main-window-progress-reset')
-            infoStartingBOX.style.display = "none"
-            playInstanceBTN.style.display = "flex"
+            ipcRenderer.send('main-window-progress-reset')
+
+            infoStartingBOX.classList.remove('visible');
+            setTimeout(() => {
+                infoStartingBOX.style.display = "none";
+                playInstanceBTN.classList.remove('hidden');
+            }, 300);
+
             infoStarting.innerHTML = `Vérification`
             new logger(pkg.name, '#7289da');
             console.log('Close');
@@ -324,8 +310,13 @@ class Home {
                 ipcRenderer.send("main-window-show")
             };
             ipcRenderer.send('main-window-progress-reset')
-            infoStartingBOX.style.display = "none"
-            playInstanceBTN.style.display = "flex"
+
+            infoStartingBOX.classList.remove('visible');
+            setTimeout(() => {
+                infoStartingBOX.style.display = "none";
+                playInstanceBTN.classList.remove('hidden');
+            }, 300);
+
             infoStarting.innerHTML = `Vérification`
             new logger(pkg.name, '#7289da');
             console.log(err);

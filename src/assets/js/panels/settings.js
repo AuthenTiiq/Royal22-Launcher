@@ -3,7 +3,7 @@
  * @license CC-BY-NC 4.0 - https://creativecommons.org/licenses/by-nc/4.0
  */
 
-import { changePanel, accountSelect, database, Slider, config, setStatus, popup, appdata, setBackground } from '../utils.js'
+import { changePanel, accountSelect, database, config, setStatus, popup, appdata, setBackground } from '../utils.js'
 const { ipcRenderer } = require('electron');
 const os = require('os');
 
@@ -41,43 +41,34 @@ class Settings {
     }
 
     showJavaSettingsPanel() {
-        document.querySelector('.nav-settings-btn#java').click();
+        document.querySelector('.settings-tab-btn#java').click();
     }
 
     showResolutionSettingsPanel() {
-        document.querySelector('.nav-settings-btn#resolution').click();
+        document.querySelector('.settings-tab-btn#resolution').click();
     }
 
     showLauncherSettingsPanel() {
-        document.querySelector('.nav-settings-btn#launcher').click();
+        document.querySelector('.settings-tab-btn#launcher').click();
     }
 
     showAccountsSettingsPanel() {
-        document.querySelector('.nav-settings-btn#account').click();
+        document.querySelector('.settings-tab-btn#account').click();
     }
 
     navBTN() {
-        document.querySelector('.nav-box').addEventListener('click', e => {
-            if (e.target.classList.contains('nav-settings-btn')) {
+        document.querySelector('.settings-nav-bar').addEventListener('click', e => {
+            if (e.target.classList.contains('settings-tab-btn')) {
                 let id = e.target.id
 
-                let activeSettingsBTN = document.querySelector('.active-settings-BTN')
-                let activeContainerSettings = document.querySelector('.active-container-settings')
+                let activeTab = document.querySelector('.active-tab')
+                let activeSection = document.querySelector('.active-section')
 
-                if (id == 'save') {
-                    if (activeSettingsBTN) activeSettingsBTN.classList.toggle('active-settings-BTN');
-                    document.querySelector('#account').classList.add('active-settings-BTN');
+                if (activeTab) activeTab.classList.remove('active-tab');
+                e.target.classList.add('active-tab');
 
-                    if (activeContainerSettings) activeContainerSettings.classList.toggle('active-container-settings');
-                    document.querySelector(`#account-tab`).classList.add('active-container-settings');
-                    return changePanel('home')
-                }
-
-                if (activeSettingsBTN) activeSettingsBTN.classList.toggle('active-settings-BTN');
-                e.target.classList.add('active-settings-BTN');
-
-                if (activeContainerSettings) activeContainerSettings.classList.toggle('active-container-settings');
-                document.querySelector(`#${id}-tab`).classList.add('active-container-settings');
+                if (activeSection) activeSection.classList.remove('active-section');
+                document.querySelector(`#${id}-tab`).classList.add('active-section');
             }
         })
     }
@@ -86,30 +77,15 @@ class Settings {
         document.querySelector('.accounts-list').addEventListener('click', async e => {
             let popupAccount = new popup()
             try {
-                let id = e.target.id
-                if (e.target.classList.contains('account')) {
+                // Use closest() to detect clicks on account card or its children
+                let accountCard = e.target.closest('.account');
+                let deleteBtn = e.target.closest('.delete-profile');
+
+                if (deleteBtn) {
+                    let id = deleteBtn.id;
                     popupAccount.openPopup({
                         title: 'Connexion',
-                        content: 'Veuillez patienter...',
-                        color: 'var(--color)'
-                    })
-
-                    if (id == 'add') {
-                        document.querySelector('.cancel-home').style.display = 'inline'
-                        return changePanel('login')
-                    }
-
-                    let account = await this.db.readData('accounts', id);
-                    let configClient = await this.setInstance(account);
-                    await accountSelect(account);
-                    configClient.account_selected = account.ID;
-                    return await this.db.updateData('configClient', configClient);
-                }
-
-                if (e.target.classList.contains("delete-profile")) {
-                    popupAccount.openPopup({
-                        title: 'Connexion',
-                        content: 'Veuillez patienter...',
+                        content: 'Suppression du compte...',
                         color: 'var(--color)'
                     })
                     await this.db.deleteData('accounts', id);
@@ -129,6 +105,27 @@ class Settings {
                         configClient.instance_selct = newInstanceSelect.instance_selct
                         return await this.db.updateData('configClient', configClient);
                     }
+                    return;
+                }
+
+                if (accountCard) {
+                    let id = accountCard.id;
+                    popupAccount.openPopup({
+                        title: 'Connexion',
+                        content: 'Veuillez patienter...',
+                        color: 'var(--color)'
+                    })
+
+                    if (id == 'add') {
+                        document.querySelector('.cancel-home').style.display = 'inline'
+                        return changePanel('login')
+                    }
+
+                    let account = await this.db.readData('accounts', id);
+                    let configClient = await this.setInstance(account);
+                    await accountSelect(account);
+                    configClient.account_selected = account.ID;
+                    return await this.db.updateData('configClient', configClient);
                 }
             } catch (err) {
                 console.error(err)
@@ -159,42 +156,81 @@ class Settings {
     }
 
     async ram() {
-        let config = await this.db.readData('configClient');
+        let configClient = await this.db.readData('configClient');
         let totalMem = Math.trunc(os.totalmem() / 1073741824 * 10) / 10;
         let freeMem = Math.trunc(os.freemem() / 1073741824 * 10) / 10;
 
         document.getElementById("total-ram").textContent = `${totalMem} Go`;
         document.getElementById("free-ram").textContent = `${freeMem} Go`;
 
-        let sliderDiv = document.querySelector(".memory-slider");
-        sliderDiv.setAttribute("max", Math.trunc((80 * totalMem) / 100));
+        // Calculate max allowed RAM (80% of total)
+        let maxAllowedRam = Math.trunc((80 * totalMem) / 100);
 
-        let ram = config?.java_config?.java_memory ? {
-            ramMin: config.java_config.java_memory.min,
-            ramMax: config.java_config.java_memory.max
-        } : { ramMin: "1", ramMax: "2" };
+        // Get saved RAM values or use defaults
+        let ramMin = configClient?.java_config?.java_memory?.min || 2;
+        let ramMax = configClient?.java_config?.java_memory?.max || 4;
 
-        if (totalMem < ram.ramMin) {
-            config.java_config.java_memory = { min: 1, max: 2 };
-            await this.db.updateData('configClient', config);
-            ram = { ramMin: "1", ramMax: "2" }
-        };
+        // Clamp values to valid range
+        ramMin = Math.max(1, Math.min(ramMin, maxAllowedRam));
+        ramMax = Math.max(ramMin, Math.min(ramMax, maxAllowedRam));
 
-        let slider = new Slider(".memory-slider", parseFloat(ram.ramMin), parseFloat(ram.ramMax));
+        // Get slider elements
+        const minSlider = document.getElementById('ram-min-slider');
+        const maxSlider = document.getElementById('ram-max-slider');
+        const minValueDisplay = document.getElementById('ram-min-value');
+        const maxValueDisplay = document.getElementById('ram-max-value');
 
-        let minSpan = document.querySelector(".slider-touch-left span");
-        let maxSpan = document.querySelector(".slider-touch-right span");
+        // Configure sliders
+        minSlider.min = 1;
+        minSlider.max = maxAllowedRam;
+        minSlider.value = ramMin;
 
-        minSpan.setAttribute("value", `${ram.ramMin} Go`);
-        maxSpan.setAttribute("value", `${ram.ramMax} Go`);
+        maxSlider.min = 1;
+        maxSlider.max = maxAllowedRam;
+        maxSlider.value = ramMax;
 
-        slider.on("change", async (min, max) => {
-            let config = await this.db.readData('configClient');
-            minSpan.setAttribute("value", `${min} Go`);
-            maxSpan.setAttribute("value", `${max} Go`);
-            if (!config.java_config) config.java_config = {};
-            config.java_config.java_memory = { min: min, max: max };
-            await this.db.updateData('configClient', config);
+        // Display initial values
+        minValueDisplay.textContent = `${ramMin} Go`;
+        maxValueDisplay.textContent = `${ramMax} Go`;
+
+        // Min slider change handler
+        minSlider.addEventListener('input', async () => {
+            let minVal = parseFloat(minSlider.value);
+            let maxVal = parseFloat(maxSlider.value);
+
+            // Ensure min doesn't exceed max
+            if (minVal > maxVal) {
+                minVal = maxVal;
+                minSlider.value = minVal;
+            }
+
+            minValueDisplay.textContent = `${minVal} Go`;
+
+            // Save to config
+            let cfg = await this.db.readData('configClient');
+            if (!cfg.java_config) cfg.java_config = {};
+            cfg.java_config.java_memory = { min: minVal, max: maxVal };
+            await this.db.updateData('configClient', cfg);
+        });
+
+        // Max slider change handler
+        maxSlider.addEventListener('input', async () => {
+            let minVal = parseFloat(minSlider.value);
+            let maxVal = parseFloat(maxSlider.value);
+
+            // Ensure max doesn't go below min
+            if (maxVal < minVal) {
+                maxVal = minVal;
+                maxSlider.value = maxVal;
+            }
+
+            maxValueDisplay.textContent = `${maxVal} Go`;
+
+            // Save to config
+            let cfg = await this.db.readData('configClient');
+            if (!cfg.java_config) cfg.java_config = {};
+            cfg.java_config.java_memory = { min: minVal, max: maxVal };
+            await this.db.updateData('configClient', cfg);
         });
     }
 
