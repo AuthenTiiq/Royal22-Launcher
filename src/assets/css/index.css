@@ -1,0 +1,224 @@
+@import 'font.css';
+@import 'theme.css';
+
+/* ========== GLOBAL RESET ========== */
+* {
+    box-sizing: border-box;
+    outline: none;
+    -webkit-user-drag: none;
+    user-select: none;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden !important;
+    /* Force no scrollbars */
+    font-family: 'Poppins', sans-serif;
+    color: #fff;
+    background: #1a1a2e;
+    /* Fallback */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ========== BACKGROUND ========== */
+#background-video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -1;
+    filter: brightness(0.5) blur(3px);
+    /* Darker and blurred for better text contrast */
+    transform: scale(1.1);
+    /* Prevent edge bleeding from blur */
+}
+
+#splash-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ========== SPLASH CARD ========== */
+#splash {
+    width: 360px;
+    /* Slightly smaller to ensure fit */
+    padding: 30px;
+
+    /* Premium Glassmorphism */
+    background: rgba(20, 20, 30, 0.65);
+    /* Darker tint */
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 30px 60px rgba(0, 0, 0, 0.5),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+
+    transform: translateY(10px);
+    opacity: 0;
+    animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ========== LOGO ========== */
+.logo-container {
+    margin-bottom: 25px;
+}
+
+img.splash {
+    width: 110px;
+    height: auto;
+    filter: drop-shadow(0 0 25px rgba(0, 189, 122, 0.25));
+    /* Brand glow */
+    opacity: 0;
+    transform: scale(0.9);
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+img.splash.opacity {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ========== QUOTE ========== */
+.quote-container {
+    margin-bottom: 30px;
+    min-height: 60px;
+    /* Prevent layout jump */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.splash-message {
+    font-size: 0.95rem;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0 0 6px 0;
+    font-weight: 500;
+    font-style: italic;
+    opacity: 0;
+    transform: translateY(5px);
+    transition: all 0.5s ease;
+}
+
+.splash-message.opacity {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.splash-author .author {
+    font-size: 0.7rem;
+    color: var(--element-color);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0;
+    transition: opacity 0.5s ease 0.2s;
+}
+
+.splash-author.opacity .author {
+    opacity: 1;
+}
+
+/* ========== STATUS & PROGRESS ========== */
+.status-container {
+    width: 100%;
+}
+
+.message {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.message.opacity {
+    opacity: 1;
+}
+
+/* Custom Progress Bar */
+.progress {
+    width: 100%;
+    height: 4px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.progress.show {
+    opacity: 1;
+}
+
+.progress::-webkit-progress-bar {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.progress::-webkit-progress-value {
+    background: var(--element-color);
+    box-shadow: 0 0 10px var(--element-color-glow);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* ========== UPDATE BUTTON ========== */
+.download-update {
+    display: inline-block;
+    padding: 10px 24px;
+    margin-top: 10px;
+    background: rgba(0, 189, 122, 0.1);
+    border: 1px solid var(--element-color);
+    color: var(--element-color);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+}
+
+.download-update:hover {
+    background: var(--element-color);
+    color: #fff;
+    box-shadow: 0 0 20px var(--element-color-glow);
+    transform: translateY(-2px);
+}
+
+/* Remove defaults */
+::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
