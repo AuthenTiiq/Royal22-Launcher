@@ -61,7 +61,15 @@ ipcMain.on('main-window-hide', () => MainWindow.getWindow().hide())
 ipcMain.on('main-window-show', () => MainWindow.getWindow().show())
 
 ipcMain.handle('Microsoft-window', async (_, client_id) => {
-    return await new Microsoft(client_id).getAuth();
+    console.log('[Microsoft Auth] Starting with client_id:', client_id);
+    try {
+        const result = await new Microsoft(client_id).getAuth();
+        //console.log('[Microsoft Auth] Result:', JSON.stringify(result, null, 2));
+        return result;
+    } catch (error) {
+        //console.error('[Microsoft Auth] Error:', error);
+        return { error: error.message || 'Unknown error during Microsoft authentication' };
+    }
 })
 
 ipcMain.handle('is-dark-theme', (_, theme) => {

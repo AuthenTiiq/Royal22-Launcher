@@ -20,7 +20,7 @@ class Login {
                 this.getAZauth();
             }
         }
-        
+
         document.querySelector('.cancel-home').addEventListener('click', () => {
             document.querySelector('.cancel-home').style.display = 'none'
             changePanel('settings')
@@ -42,18 +42,44 @@ class Login {
             });
 
             ipcRenderer.invoke('Microsoft-window', this.config.client_id).then(async account_connect => {
+                console.log('Microsoft auth response:', account_connect);
+
                 if (account_connect == 'cancel' || !account_connect) {
                     popupLogin.closePopup();
                     return;
-                } else {
-                    await this.saveData(account_connect)
-                    popupLogin.closePopup();
                 }
 
+                // Check if response contains an error
+                if (account_connect.error) {
+                    popupLogin.openPopup({
+                        title: 'Erreur',
+                        content: account_connect.error || account_connect.errorMessage || 'Erreur d\'authentification Microsoft',
+                        color: 'red',
+                        options: true
+                    });
+                    return;
+                }
+
+                // Verify required fields are present
+                if (!account_connect.name || !account_connect.uuid) {
+                    console.error('Invalid account data:', account_connect);
+                    popupLogin.openPopup({
+                        title: 'Erreur',
+                        content: 'Données de compte invalides reçues de Microsoft',
+                        color: 'red',
+                        options: true
+                    });
+                    return;
+                }
+
+                await this.saveData(account_connect);
+                popupLogin.closePopup();
+
             }).catch(err => {
+                console.error('Microsoft auth error:', err);
                 popupLogin.openPopup({
                     title: 'Erreur',
-                    content: err,
+                    content: err.message || err,
                     options: true
                 });
             });
