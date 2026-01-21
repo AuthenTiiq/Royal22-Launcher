@@ -31,7 +31,7 @@ class Settings {
         ipcRenderer.on('open-settings-launcher', () => {
             this.showLauncherSettingsPanel();
         })
-        
+
         // Gestionnaire d'événements pour la touche Échap
         document.addEventListener('keyup', (event) => {
             if (event.key === 'Escape') {
@@ -176,7 +176,7 @@ class Settings {
 
         if (totalMem < ram.ramMin) {
             config.java_config.java_memory = { min: 1, max: 2 };
-            this.db.updateData('configClient', config);
+            await this.db.updateData('configClient', config);
             ram = { ramMin: "1", ramMax: "2" }
         };
 
@@ -192,8 +192,9 @@ class Settings {
             let config = await this.db.readData('configClient');
             minSpan.setAttribute("value", `${min} Go`);
             maxSpan.setAttribute("value", `${max} Go`);
+            if (!config.java_config) config.java_config = {};
             config.java_config.java_memory = { min: min, max: max };
-            this.db.updateData('configClient', config);
+            await this.db.updateData('configClient', config);
         });
     }
 
@@ -247,18 +248,23 @@ class Settings {
 
         width.addEventListener("change", async () => {
             let configClient = await this.db.readData('configClient')
+            if (!configClient.game_config) configClient.game_config = {};
+            if (!configClient.game_config.screen_size) configClient.game_config.screen_size = {};
             configClient.game_config.screen_size.width = width.value;
             await this.db.updateData('configClient', configClient);
         })
 
         height.addEventListener("change", async () => {
             let configClient = await this.db.readData('configClient')
+            if (!configClient.game_config) configClient.game_config = {};
+            if (!configClient.game_config.screen_size) configClient.game_config.screen_size = {};
             configClient.game_config.screen_size.height = height.value;
             await this.db.updateData('configClient', configClient);
         })
 
         resolutionReset.addEventListener("click", async () => {
             let configClient = await this.db.readData('configClient')
+            if (!configClient.game_config) configClient.game_config = {};
             configClient.game_config.screen_size = { width: '854', height: '480' };
             width.value = '854';
             height.value = '480';
@@ -276,12 +282,14 @@ class Settings {
 
         maxDownloadFilesInput.addEventListener("change", async () => {
             let configClient = await this.db.readData('configClient')
+            if (!configClient.launcher_config) configClient.launcher_config = {};
             configClient.launcher_config.download_multi = maxDownloadFilesInput.value;
             await this.db.updateData('configClient', configClient);
         })
 
         maxDownloadFilesReset.addEventListener("click", async () => {
             let configClient = await this.db.readData('configClient')
+            if (!configClient.launcher_config) configClient.launcher_config = {};
             maxDownloadFilesInput.value = 5
             configClient.launcher_config.download_multi = 5;
             await this.db.updateData('configClient', configClient);
@@ -319,6 +327,7 @@ class Settings {
                 }
 
                 let configClient = await this.db.readData('configClient')
+                if (!configClient.launcher_config) configClient.launcher_config = {};
                 configClient.launcher_config.theme = theme;
                 await this.db.updateData('configClient', configClient);
             }
@@ -345,14 +354,17 @@ class Settings {
 
                 if (e.target.classList.contains('close-launcher')) {
                     e.target.classList.toggle('active-close');
+                    if (!configClient.launcher_config) configClient.launcher_config = {};
                     configClient.launcher_config.closeLauncher = "close-launcher";
                     await this.db.updateData('configClient', configClient);
                 } else if (e.target.classList.contains('close-all')) {
                     e.target.classList.toggle('active-close');
+                    if (!configClient.launcher_config) configClient.launcher_config = {};
                     configClient.launcher_config.closeLauncher = "close-all";
                     await this.db.updateData('configClient', configClient);
                 } else if (e.target.classList.contains('close-none')) {
                     e.target.classList.toggle('active-close');
+                    if (!configClient.launcher_config) configClient.launcher_config = {};
                     configClient.launcher_config.closeLauncher = "close-none";
                     await this.db.updateData('configClient', configClient);
                 }
