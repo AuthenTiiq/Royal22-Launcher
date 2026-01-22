@@ -1,7 +1,7 @@
 {
     "name": "royalcreeps-launcher",
     "preductname": "RoyalCreeps Launcher",
-    "version": "2.1.0",
+    "version": "2.1.1",
     "description": "Launcher Minecraft de RoyalCreep's",
     "main": "src/app.js",
     "author": {
