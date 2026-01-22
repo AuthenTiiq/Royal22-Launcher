@@ -3,6 +3,7 @@
  * @license CC-BY-NC 4.0 - https://creativecommons.org/licenses/by-nc/4.0
  */
 import { config, database, logger, changePanel, appdata, setStatus, pkg, popup } from '../utils.js'
+import EventManager from '../utils/event-manager.js';
 
 const { Launch } = require('minecraft-java-core')
 const { shell, ipcRenderer } = require('electron')
@@ -13,10 +14,18 @@ class Home {
     async init(config) {
         this.config = config;
         this.db = new database();
+        this.eventManager = new EventManager();
         // Remove settings btn listener since it's global now
         this.news()
         this.socialLick()
         this.instancesSelect()
+    }
+
+    /**
+     * Cleanup method to remove all event listeners
+     */
+    destroy() {
+        this.eventManager.cleanup();
     }
 
     async news() {
@@ -92,7 +101,7 @@ class Home {
         let socials = document.querySelectorAll('.social-pill')
 
         socials.forEach(social => {
-            social.addEventListener('click', e => {
+            this.eventManager.add(social, 'click', e => {
                 shell.openExternal(e.target.dataset.url)
             })
         });
@@ -139,7 +148,7 @@ class Home {
             if (instance.name == instanceSelect) setStatus(instance.status)
         }
 
-        instancePopup.addEventListener('click', async e => {
+        this.eventManager.add(instancePopup, 'click', async e => {
             let configClient = await this.db.readData('configClient')
 
             if (e.target.classList.contains('instance-elements')) {
@@ -161,12 +170,12 @@ class Home {
             }
         })
 
-        instanceBTN.addEventListener('click', async e => {
+        this.eventManager.add(instanceBTN, 'click', async e => {
             // Only one instance exists, just start the game
             this.startGame();
         })
 
-        instanceCloseBTN.addEventListener('click', () => {
+        this.eventManager.add(instanceCloseBTN, 'click', () => {
             instancePopup.classList.remove('active');
             setTimeout(() => instancePopup.style.display = 'none', 300);
         })

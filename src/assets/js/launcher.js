@@ -8,7 +8,8 @@ import Home from './panels/home.js';
 import Settings from './panels/settings.js';
 
 // import modules
-import { logger, config, changePanel, database, popup, setBackground, accountSelect, addAccount, pkg } from './utils.js';
+import { logger, config, changePanel, database, popup, setBackground, accountSelect, addAccount, pkg, toggleNavbar } from './utils.js';
+import EventManager from './utils/event-manager.js';
 const { AZauth, Microsoft, Mojang } = require('minecraft-java-core');
 
 // libs
@@ -17,6 +18,7 @@ const fs = require('fs');
 
 class Launcher {
     async init() {
+        this.eventManager = new EventManager();
         this.initLog();
         console.log('Initializing Launcher...');
         this.shortcut()
@@ -30,19 +32,19 @@ class Launcher {
         this.initGlobalNavigation();
         this.startLauncher();
         this.initBackground();
-        ipcRenderer.on('open-settings-panel', () => {
+        this.eventManager.add(ipcRenderer, 'open-settings-panel', () => {
             this.showSettingsPanel();
         });
 
     }
 
     initGlobalNavigation() {
-        document.getElementById('nav-home').addEventListener('click', () => {
+        this.eventManager.add(document.getElementById('nav-home'), 'click', () => {
             changePanel('home');
             this.updateNavState('nav-home');
         });
 
-        document.getElementById('nav-settings').addEventListener('click', () => {
+        this.eventManager.add(document.getElementById('nav-settings'), 'click', () => {
             changePanel('settings');
             this.updateNavState('nav-settings');
         });
@@ -60,8 +62,8 @@ class Launcher {
     }
 
     initLog() {
-        document.addEventListener('keydown', e => {
-            if (e.ctrlKey && e.shiftKey && e.keyCode == 73 || e.keyCode == 123) {
+        this.eventManager.add(document, 'keydown', e => {
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 173 || e.keyCode == 123) {
                 ipcRenderer.send('main-window-dev-tools-close');
                 ipcRenderer.send('main-window-dev-tools');
             }
@@ -108,7 +110,7 @@ class Launcher {
     }
 
     shortcut() {
-        document.addEventListener('keydown', e => {
+        this.eventManager.add(document, 'keydown', e => {
             if (e.ctrlKey && e.keyCode == 87) {
                 ipcRenderer.send('main-window-close');
             }
@@ -131,13 +133,13 @@ class Launcher {
         document.querySelector('.frame').classList.toggle('hide')
         document.querySelector('.dragbar').classList.toggle('hide')
 
-        document.querySelector('#minimize').addEventListener('click', () => {
+        this.eventManager.add(document.querySelector('#minimize'), 'click', () => {
             ipcRenderer.send('main-window-minimize');
         });
 
         let maximized = false;
         let maximize = document.querySelector('#maximize')
-        maximize.addEventListener('click', () => {
+        this.eventManager.add(maximize, 'click', () => {
             if (maximized) ipcRenderer.send('main-window-maximize')
             else ipcRenderer.send('main-window-maximize');
             maximized = !maximized
@@ -145,7 +147,7 @@ class Launcher {
             maximize.classList.toggle('icon-restore-down')
         });
 
-        document.querySelector('#close').addEventListener('click', () => {
+        this.eventManager.add(document.querySelector('#close'), 'click', () => {
             ipcRenderer.send('main-window-close');
         })
     }
@@ -194,6 +196,7 @@ class Launcher {
     }
 
     async startLauncher() {
+        toggleNavbar(false);
         let accounts = await this.db.readAllData('accounts')
         let configClient = await this.db.readData('configClient')
         let account_selected = configClient ? configClient.account_selected : null
@@ -316,13 +319,16 @@ class Launcher {
                 config.account_selected = null
                 await this.db.updateData('configClient', config);
                 popupRefresh.closePopup()
+                toggleNavbar(false);
                 return changePanel("login");
             }
 
             popupRefresh.closePopup()
+            toggleNavbar(true);
             changePanel("home");
         } else {
             popupRefresh.closePopup()
+            toggleNavbar(false);
             changePanel('login');
         }
     }

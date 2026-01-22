@@ -11,10 +11,11 @@ export default class popup {
         this.popupTitle = document.querySelector('.popup-title');
         this.popupContent = document.querySelector('.popup-content');
         this.popupOptions = document.querySelector('.popup-options');
-        this.popupButton = document.querySelector('.popup-button');
+
     }
 
     openPopup(info) {
+        this.popupButton = document.querySelector('.popup-button');
         this.popup.style.display = 'flex';
         // Reset background to allow CSS to handle it, unless explicitly disabled
         if (info.background === false) this.popup.style.background = 'none';
@@ -24,7 +25,9 @@ export default class popup {
         this.popupContent.style.color = info.color ? info.color : '#e21212';
         this.popupContent.innerHTML = info.content;
 
-        if (info.options) this.popupOptions.style.display = 'flex';
+        if (info.onClose) this.onClose = info.onClose;
+
+        if (info.options || info.close || info.exit) this.popupOptions.style.display = 'flex';
 
         // Wait a frame to allow display:flex to apply before adding opacity class
         requestAnimationFrame(() => {
@@ -32,16 +35,10 @@ export default class popup {
         });
 
         if (this.popupOptions.style.display !== 'none') {
-            // Remove old listeners to avoid duplicates (though this implementation is simple, 
-            // ideally we normally handle this better, but consistent with existing code structure)
-            const newBtn = this.popupButton.cloneNode(true);
-            this.popupButton.parentNode.replaceChild(newBtn, this.popupButton);
-            this.popupButton = newBtn;
-
-            this.popupButton.addEventListener('click', () => {
+            this.popupButton.onclick = () => {
                 if (info.exit) return ipcRenderer.send('main-window-close');
                 this.closePopup();
-            })
+            }
         }
     }
 
@@ -53,6 +50,10 @@ export default class popup {
             this.popupTitle.innerHTML = '';
             this.popupContent.innerHTML = '';
             this.popupOptions.style.display = 'none';
+            if (this.onClose) {
+                this.onClose();
+                this.onClose = null;
+            }
         }, 300);
     }
 }

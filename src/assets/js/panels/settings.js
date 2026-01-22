@@ -3,7 +3,8 @@
  * @license CC-BY-NC 4.0 - https://creativecommons.org/licenses/by-nc/4.0
  */
 
-import { changePanel, accountSelect, database, config, setStatus, popup, appdata, setBackground } from '../utils.js'
+import { changePanel, accountSelect, database, config, setStatus, popup, appdata, setBackground, toggleNavbar, cacheManager, debounce } from '../utils.js'
+import EventManager from '../utils/event-manager.js';
 const { ipcRenderer } = require('electron');
 const os = require('os');
 
@@ -12,6 +13,7 @@ class Settings {
     async init(config) {
         this.config = config;
         this.db = new database();
+        this.eventManager = new EventManager();
         this.navBTN()
         this.accounts()
         this.ram()
@@ -19,25 +21,33 @@ class Settings {
         this.resolution()
         this.launcher()
 
-        ipcRenderer.on('open-settings-accounts', () => {
+        this.eventManager.add(ipcRenderer, 'open-settings-accounts', () => {
             this.showAccountsSettingsPanel();
         })
-        ipcRenderer.on('open-settings-java', () => {
+        this.eventManager.add(ipcRenderer, 'open-settings-java', () => {
             this.showJavaSettingsPanel();
         })
-        ipcRenderer.on('open-settings-resolution', () => {
+        this.eventManager.add(ipcRenderer, 'open-settings-resolution', () => {
             this.showResolutionSettingsPanel();
         })
-        ipcRenderer.on('open-settings-launcher', () => {
+        this.eventManager.add(ipcRenderer, 'open-settings-launcher', () => {
             this.showLauncherSettingsPanel();
         })
 
         // Gestionnaire d'événements pour la touche Échap
-        document.addEventListener('keyup', (event) => {
+        this.eventManager.add(document, 'keyup', (event) => {
             if (event.key === 'Escape') {
                 changePanel('home');
             }
         });
+    }
+
+    /**
+     * Cleanup method to remove all event listeners
+     * Call this when settings panel is destroyed/closed
+     */
+    destroy() {
+        this.eventManager.cleanup();
     }
 
     showJavaSettingsPanel() {
@@ -57,7 +67,7 @@ class Settings {
     }
 
     navBTN() {
-        document.querySelector('.settings-nav-bar').addEventListener('click', e => {
+        this.eventManager.add(document.querySelector('.settings-nav-bar'), 'click', e => {
             if (e.target.classList.contains('settings-tab-btn')) {
                 let id = e.target.id
 
@@ -74,7 +84,7 @@ class Settings {
     }
 
     accounts() {
-        document.querySelector('.accounts-list').addEventListener('click', async e => {
+        this.eventManager.add(document.querySelector('.accounts-list'), 'click', async e => {
             let popupAccount = new popup()
             try {
                 // Use closest() to detect clicks on account card or its children
@@ -93,7 +103,10 @@ class Settings {
                     let accountListElement = document.querySelector('.accounts-list');
                     accountListElement.removeChild(deleteProfile);
 
-                    if (accountListElement.children.length == 1) return changePanel('login');
+                    if (accountListElement.children.length == 1) {
+                        toggleNavbar(false)
+                        return changePanel('login')
+                    }
 
                     let configClient = await this.db.readData('configClient');
 
@@ -110,19 +123,29 @@ class Settings {
 
                 if (accountCard) {
                     let id = accountCard.id;
+
+                    // Check if clicking "add account" button
+                    if (id == 'add') {
+                        document.querySelector('.cancel-home').style.display = 'inline'
+                        toggleNavbar(false)
+                        return changePanel('login')
+                    }
+
+                    // Prevent re-selecting already selected account
+                    let configClient = await this.db.readData('configClient');
+                    if (configClient.account_selected === id) {
+                        console.log('Account already selected, ignoring click');
+                        return; // Do nothing if already selected
+                    }
+
                     popupAccount.openPopup({
                         title: 'Connexion',
                         content: 'Veuillez patienter...',
                         color: 'var(--color)'
                     })
 
-                    if (id == 'add') {
-                        document.querySelector('.cancel-home').style.display = 'inline'
-                        return changePanel('login')
-                    }
-
                     let account = await this.db.readData('accounts', id);
-                    let configClient = await this.setInstance(account);
+                    configClient = await this.setInstance(account);
                     await accountSelect(account);
                     configClient.account_selected = account.ID;
                     return await this.db.updateData('configClient', configClient);
@@ -193,8 +216,16 @@ class Settings {
         minValueDisplay.textContent = `${ramMin} Go`;
         maxValueDisplay.textContent = `${ramMax} Go`;
 
+        // Create debounced save function (300ms delay)
+        const debouncedSave = debounce(async (minVal, maxVal) => {
+            let cfg = await this.db.readData('configClient');
+            if (!cfg.java_config) cfg.java_config = {};
+            cfg.java_config.java_memory = { min: minVal, max: maxVal };
+            await this.db.updateData('configClient', cfg);
+        }, 300);
+
         // Min slider change handler
-        minSlider.addEventListener('input', async () => {
+        this.eventManager.add(minSlider, 'input', () => {
             let minVal = parseFloat(minSlider.value);
             let maxVal = parseFloat(maxSlider.value);
 
@@ -206,15 +237,12 @@ class Settings {
 
             minValueDisplay.textContent = `${minVal} Go`;
 
-            // Save to config
-            let cfg = await this.db.readData('configClient');
-            if (!cfg.java_config) cfg.java_config = {};
-            cfg.java_config.java_memory = { min: minVal, max: maxVal };
-            await this.db.updateData('configClient', cfg);
+            // Debounced save to reduce DB writes
+            debouncedSave(minVal, maxVal);
         });
 
         // Max slider change handler
-        maxSlider.addEventListener('input', async () => {
+        this.eventManager.add(maxSlider, 'input', () => {
             let minVal = parseFloat(minSlider.value);
             let maxVal = parseFloat(maxSlider.value);
 
@@ -226,11 +254,8 @@ class Settings {
 
             maxValueDisplay.textContent = `${maxVal} Go`;
 
-            // Save to config
-            let cfg = await this.db.readData('configClient');
-            if (!cfg.java_config) cfg.java_config = {};
-            cfg.java_config.java_memory = { min: minVal, max: maxVal };
-            await this.db.updateData('configClient', cfg);
+            // Debounced save to reduce DB writes
+            debouncedSave(minVal, maxVal);
         });
     }
 
@@ -244,26 +269,29 @@ class Settings {
         let javaPathInputFile = document.querySelector(".java-path-input-file");
         javaPathInputTxt.value = javaPath;
 
-        document.querySelector(".java-path-set").addEventListener("click", async () => {
+        // File input change handler (replaces polling)
+        const handleFileChange = async () => {
+            if (javaPathInputFile.files.length > 0) {
+                const file = javaPathInputFile.files[0].path;
+                if (file.replace(".exe", '').endsWith("java") || file.replace(".exe", '').endsWith("javaw")) {
+                    let configClient = await this.db.readData('configClient')
+                    javaPathInputTxt.value = file;
+                    configClient.java_config.java_path = file
+                    await this.db.updateData('configClient', configClient);
+                } else {
+                    alert("Le nom du fichier doit être java ou javaw");
+                }
+            }
+        };
+
+        this.eventManager.add(javaPathInputFile, 'change', handleFileChange);
+
+        this.eventManager.add(document.querySelector(".java-path-set"), "click", () => {
             javaPathInputFile.value = '';
             javaPathInputFile.click();
-            await new Promise((resolve) => {
-                let interval;
-                interval = setInterval(() => {
-                    if (javaPathInputFile.value != '') resolve(clearInterval(interval));
-                }, 100);
-            });
-
-            if (javaPathInputFile.value.replace(".exe", '').endsWith("java") || javaPathInputFile.value.replace(".exe", '').endsWith("javaw")) {
-                let configClient = await this.db.readData('configClient')
-                let file = javaPathInputFile.files[0].path;
-                javaPathInputTxt.value = file;
-                configClient.java_config.java_path = file
-                await this.db.updateData('configClient', configClient);
-            } else alert("Le nom du fichier doit être java ou javaw");
         });
 
-        document.querySelector(".java-path-reset").addEventListener("click", async () => {
+        this.eventManager.add(document.querySelector(".java-path-reset"), "click", async () => {
             let configClient = await this.db.readData('configClient')
             javaPathInputTxt.value = 'Utiliser la version de java livre avec le launcher';
             configClient.java_config.java_path = null
@@ -282,7 +310,7 @@ class Settings {
         width.value = resolution.width;
         height.value = resolution.height;
 
-        width.addEventListener("change", async () => {
+        this.eventManager.add(width, "change", async () => {
             let configClient = await this.db.readData('configClient')
             if (!configClient.game_config) configClient.game_config = {};
             if (!configClient.game_config.screen_size) configClient.game_config.screen_size = {};
@@ -290,7 +318,7 @@ class Settings {
             await this.db.updateData('configClient', configClient);
         })
 
-        height.addEventListener("change", async () => {
+        this.eventManager.add(height, "change", async () => {
             let configClient = await this.db.readData('configClient')
             if (!configClient.game_config) configClient.game_config = {};
             if (!configClient.game_config.screen_size) configClient.game_config.screen_size = {};
@@ -298,7 +326,7 @@ class Settings {
             await this.db.updateData('configClient', configClient);
         })
 
-        resolutionReset.addEventListener("click", async () => {
+        this.eventManager.add(resolutionReset, "click", async () => {
             let configClient = await this.db.readData('configClient')
             if (!configClient.game_config) configClient.game_config = {};
             configClient.game_config.screen_size = { width: '854', height: '480' };
@@ -316,14 +344,14 @@ class Settings {
         let maxDownloadFilesReset = document.querySelector(".max-files-reset");
         maxDownloadFilesInput.value = maxDownloadFiles;
 
-        maxDownloadFilesInput.addEventListener("change", async () => {
+        this.eventManager.add(maxDownloadFilesInput, "change", async () => {
             let configClient = await this.db.readData('configClient')
             if (!configClient.launcher_config) configClient.launcher_config = {};
             configClient.launcher_config.download_multi = maxDownloadFilesInput.value;
             await this.db.updateData('configClient', configClient);
         })
 
-        maxDownloadFilesReset.addEventListener("click", async () => {
+        this.eventManager.add(maxDownloadFilesReset, "click", async () => {
             let configClient = await this.db.readData('configClient')
             if (!configClient.launcher_config) configClient.launcher_config = {};
             maxDownloadFilesInput.value = 5
@@ -342,7 +370,7 @@ class Settings {
             document.querySelector('.theme-btn-clair').classList.add('active-theme');
         }
 
-        themeBox.addEventListener("click", async e => {
+        this.eventManager.add(themeBox, "click", async e => {
             if (e.target.classList.contains('theme-btn')) {
                 let activeTheme = document.querySelector('.active-theme');
                 if (e.target.classList.contains('active-theme')) return
@@ -380,7 +408,7 @@ class Settings {
             document.querySelector('.close-none').classList.add('active-close');
         }
 
-        closeBox.addEventListener("click", async e => {
+        this.eventManager.add(closeBox, "click", async e => {
             if (e.target.classList.contains('close-btn')) {
                 let activeClose = document.querySelector('.active-close');
                 if (e.target.classList.contains('active-close')) return
