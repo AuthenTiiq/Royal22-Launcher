@@ -12,6 +12,7 @@ try {
 }
 
 const { autoUpdater } = require('electron-updater')
+const { Microsoft } = require('minecraft-java-core');
 
 const path = require('path');
 const fs = require('fs');

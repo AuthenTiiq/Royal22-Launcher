@@ -115,7 +115,7 @@ input::-webkit-inner-spin-button {
     position: absolute;
     width: 100%;
     height: 100%;
-    z-index: 10;
+    z-index: 200;
     display: none;
     flex-direction: column;
     align-items: center;
@@ -180,6 +180,11 @@ input::-webkit-inner-spin-button {
     color: white;
     box-shadow: 0 0 15px var(--element-color);
     transform: translateY(-2px);
+}
+
+.popup-button:active {
+    transform: scale(0.95);
+    box-shadow: 0 0 10px var(--element-color);
 }
 
 /* Global Layout */
@@ -275,6 +280,14 @@ input::-webkit-inner-spin-button {
     color: white;
     opacity: 1;
     box-shadow: 0 0 20px var(--element-color);
+}
+
+.nav-item.disabled {
+    pointer-events: none;
+    filter: grayscale(1);
+    opacity: 0.3;
+    background: transparent !important;
+    box-shadow: none !important;
 }
 
 /* Panels */

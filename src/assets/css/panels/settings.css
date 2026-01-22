@@ -13,7 +13,8 @@
     width: calc(100% - 20px);
     height: calc(100% - 40px);
     margin: 10px;
-    background: rgba(15, 15, 20, 0.85);
+    margin: 10px;
+    background: var(--background-glass);
     backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
     border-radius: 20px;
@@ -29,7 +30,7 @@
 /* --- Header & Tabs --- */
 .settings-header {
     padding: 20px 30px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--layer-bg);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -105,7 +106,7 @@
 }
 
 .settings-block {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--layer-bg);
     border-radius: 15px;
     padding: 20px;
     margin-bottom: 25px;
@@ -122,7 +123,7 @@
 /* --- Inputs & Controls --- */
 .btn-secondary {
     padding: 8px 15px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--input-bg);
     border-radius: 8px;
     cursor: pointer;
     transition: background 0.2s;
@@ -134,10 +135,16 @@
     background: rgba(255, 255, 255, 0.2);
 }
 
+.java-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 5px;
+}
+
 /* Inputs */
 input[type="number"],
 input[type="text"] {
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--input-bg);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     padding: 8px;
@@ -156,7 +163,10 @@ input[type="text"] {
     display: flex;
     gap: 20px;
     padding: 12px;
-    background: rgba(0, 0, 0, 0.2);
+    gap: 20px;
+    padding: 12px;
+    background: var(--input-bg);
+    border-radius: 8px;
     border-radius: 8px;
     font-size: 0.9rem;
 }
@@ -239,7 +249,10 @@ input[type="text"] {
     text-align: right;
     font-weight: 600;
     color: var(--element-color);
-    background: rgba(0, 0, 0, 0.2);
+    text-align: right;
+    font-weight: 600;
+    color: var(--element-color);
+    background: var(--input-bg);
     padding: 6px 12px;
     border-radius: 8px;
 }
@@ -263,7 +276,7 @@ input[type="text"] {
 .theme-btn,
 .close-btn {
     padding: 10px 20px;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--input-bg);
     border-radius: 10px;
     cursor: pointer;
     border: 1px solid transparent;
@@ -294,21 +307,22 @@ input[type="text"] {
 }
 
 .account {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--layer-bg);
     border-radius: 12px;
     padding: 12px 16px;
     display: flex;
     align-items: center;
     gap: 12px;
     cursor: pointer;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.05);
     transition: all 0.3s ease;
 }
 
 .account:hover {
     border-color: var(--element-color);
-    background: rgba(255, 255, 255, 0.08);
-    transform: translateX(5px);
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    /* No transform to keep borders fully visible */
 }
 
 .account.account-select {

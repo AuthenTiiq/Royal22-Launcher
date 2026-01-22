@@ -15,6 +15,8 @@ import logger from './utils/logger.js';
 import popup from './utils/popup.js';
 import { skin2D } from './utils/skin.js';
 import slider from './utils/slider.js';
+import cacheManager from './utils/cache-manager.js';
+import debounce from './utils/debounce.js';
 
 
 
@@ -46,6 +48,22 @@ async function changePanel(id) {
     let active = document.querySelector('.panel.active');
     if (active) active.classList.remove("active");
     panel.classList.add("active");
+
+    // Update navigation sidebar
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    let navItem = document.getElementById(`nav-${id}`);
+    if (navItem) navItem.classList.add('active');
+}
+
+function toggleNavbar(enable) {
+    let navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        if (enable) {
+            item.classList.remove('disabled');
+        } else {
+            item.classList.add('disabled');
+        }
+    });
 }
 
 async function appdata() {
@@ -68,6 +86,8 @@ async function addAccount(data) {
             <div class="icon-account-delete delete-profile-icon"></div>
         </div>
     `
+    let existingDiv = document.getElementById(data.ID);
+    if (existingDiv) existingDiv.remove();
     return document.querySelector('.accounts-list').appendChild(div);
 }
 
@@ -147,5 +167,8 @@ export {
     accountSelect as accountSelect,
     slider as Slider,
     pkg as pkg,
-    setStatus as setStatus
+    setStatus as setStatus,
+    toggleNavbar as toggleNavbar,
+    cacheManager as cacheManager,
+    debounce as debounce
 }

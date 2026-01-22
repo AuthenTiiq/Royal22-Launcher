@@ -5,13 +5,15 @@
 const { AZauth, Mojang } = require('minecraft-java-core');
 const { ipcRenderer } = require('electron');
 
-import { popup, database, changePanel, accountSelect, addAccount, config, setStatus } from '../utils.js';
+import { popup, database, changePanel, accountSelect, addAccount, config, setStatus, toggleNavbar } from '../utils.js';
+import EventManager from '../utils/event-manager.js';
 
 class Login {
     static id = "login";
     async init(config) {
         this.config = config;
         this.db = new database();
+        this.eventManager = new EventManager();
 
         if (typeof this.config.online == 'boolean') {
             this.config.online ? this.getMicrosoft() : this.getCrack()
@@ -21,10 +23,18 @@ class Login {
             }
         }
 
-        document.querySelector('.cancel-home').addEventListener('click', () => {
+        this.eventManager.add(document.querySelector('.cancel-home'), 'click', () => {
             document.querySelector('.cancel-home').style.display = 'none'
+            toggleNavbar(true)
             changePanel('settings')
         })
+    }
+
+    /**
+     * Cleanup method to remove all event listeners
+     */
+    destroy() {
+        this.eventManager.cleanup();
     }
 
     async getMicrosoft() {
@@ -34,11 +44,15 @@ class Login {
         let microsoftBtn = document.querySelector('.connect-home');
         loginHome.style.display = 'block';
 
-        microsoftBtn.addEventListener("click", () => {
+        this.eventManager.add(microsoftBtn, "click", () => {
+            loginHome.style.display = 'none';
             popupLogin.openPopup({
                 title: 'Connexion',
                 content: 'Veuillez patienter...',
-                color: 'var(--color)'
+                color: 'var(--color)',
+                onClose: () => {
+                    loginHome.style.display = 'block';
+                }
             });
 
             ipcRenderer.invoke('Microsoft-window', this.config.client_id).then(async account_connect => {
@@ -95,7 +109,7 @@ class Login {
         let connectOffline = document.querySelector('.connect-offline');
         loginOffline.style.display = 'block';
 
-        connectOffline.addEventListener('click', async () => {
+        this.eventManager.add(connectOffline, 'click', async () => {
             if (emailOffline.value.length < 3) {
                 popupLogin.openPopup({
                     title: 'Erreur',
@@ -145,11 +159,15 @@ class Login {
 
         loginAZauth.style.display = 'block';
 
-        AZauthConnectBTN.addEventListener('click', async () => {
+        this.eventManager.add(AZauthConnectBTN, 'click', async () => {
+            loginAZauth.style.display = 'none';
             PopupLogin.openPopup({
                 title: 'Connexion en cours...',
                 content: 'Veuillez patienter...',
-                color: 'var(--color)'
+                color: 'var(--color)',
+                onClose: () => {
+                    loginAZauth.style.display = 'block';
+                }
             });
 
             if (AZauthEmail.value == '' || AZauthPassword.value == '') {
@@ -175,16 +193,20 @@ class Login {
                 loginAZauth.style.display = 'none';
                 PopupLogin.closePopup();
 
-                AZauthCancelA2F.addEventListener('click', () => {
+                this.eventManager.add(AZauthCancelA2F, 'click', () => {
                     loginAZauthA2F.style.display = 'none';
                     loginAZauth.style.display = 'block';
                 });
 
-                connectAZauthA2F.addEventListener('click', async () => {
+                this.eventManager.add(connectAZauthA2F, 'click', async () => {
+                    loginAZauthA2F.style.display = 'none';
                     PopupLogin.openPopup({
                         title: 'Connexion en cours...',
                         content: 'Veuillez patienter...',
-                        color: 'var(--color)'
+                        color: 'var(--color)',
+                        onClose: () => {
+                            loginAZauthA2F.style.display = 'block';
+                        }
                     });
 
                     if (AZauthA2F.value == '') {
@@ -219,7 +241,19 @@ class Login {
 
     async saveData(connectionData) {
         let configClient = await this.db.readData('configClient');
-        let account = await this.db.createData('accounts', connectionData)
+        let accounts = await this.db.readAllData('accounts');
+        let existingAccount = accounts.find(acc => acc.uuid === connectionData.uuid);
+        let account;
+
+        if (existingAccount) {
+            connectionData.ID = existingAccount.ID; // Ensure we keep the old ID if we want, or just update data
+            // Actually, existingAccount.ID is what we want to target.
+            // connectionData usually comes from auth and might not have our DB ID yet.
+            await this.db.updateData('accounts', connectionData, existingAccount.ID);
+            account = { ...connectionData, ID: existingAccount.ID };
+        } else {
+            account = await this.db.createData('accounts', connectionData);
+        }
         let instanceSelect = configClient.instance_selct
         let instancesList = await config.getInstanceList()
         configClient.account_selected = account.ID;
@@ -240,6 +274,7 @@ class Login {
         await this.db.updateData('configClient', configClient);
         await addAccount(account);
         await accountSelect(account);
+        toggleNavbar(true);
         changePanel('home');
     }
 }
