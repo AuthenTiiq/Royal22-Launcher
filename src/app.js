@@ -4,7 +4,13 @@
  */
 
 const { app, ipcMain, nativeTheme } = require('electron');
-const { Microsoft } = require('minecraft-java-core');
+console.log('App defined:', !!app);
+try {
+    console.log('App version:', app.getVersion());
+} catch (e) {
+    console.error('Error getting app version:', e);
+}
+
 const { autoUpdater } = require('electron-updater')
 
 const path = require('path');

@@ -1,0 +1,38 @@
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self';">
+    <link rel="stylesheet" href="assets/css/index.css">
+</head>
+
+<body>
+    <div class="backgroundVideo">
+        <video id="background-video" autoplay loop muted poster="assets/images/background/royal.jpg">
+            <!-- Source will be set if needed or auto-played if set in JS, but launcher.html has src="" initially? -->
+            <!-- checking launcher.html, it has src="" and autoplay. The JS likely sets it or it relies on poster? -->
+            <!-- Actually launcher.html has src="". I will match that. -->
+        </video>
+    </div>
+
+    <div id="splash-container">
+        <div id="splash" style="display:none">
+            <div class="logo-container">
+                <img class="splash" src="assets/images/ROYAL22.png" />
+            </div>
+
+            <div class="quote-container">
+                <p class="splash-message"></p>
+                <p class="splash-author"><span class="author"></span></p>
+            </div>
+
+            <div class="status-container">
+                <p class="message">Initialisation...</p>
+                <progress value="0" max="0" class="progress"></progress>
+            </div>
+        </div>
+    </div>
+    <script src="assets/js/index.js" type="module"></script>
+</body>
+
+</html>
