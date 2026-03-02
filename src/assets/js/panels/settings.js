@@ -216,47 +216,48 @@ class Settings {
         minValueDisplay.textContent = `${ramMin} Go`;
         maxValueDisplay.textContent = `${ramMax} Go`;
 
-        // Create debounced save function (300ms delay)
-        const debouncedSave = debounce(async (minVal, maxVal) => {
+        // Save RAM values to DB
+        const saveRam = async () => {
+            let minVal = parseFloat(minSlider.value);
+            let maxVal = parseFloat(maxSlider.value);
             let cfg = await this.db.readData('configClient');
             if (!cfg.java_config) cfg.java_config = {};
-            cfg.java_config.java_memory = { min: minVal, max: maxVal };
+            if (!cfg.java_config.java_memory) cfg.java_config.java_memory = {};
+            cfg.java_config.java_memory.min = minVal;
+            cfg.java_config.java_memory.max = maxVal;
+            console.log('RAM saved:', JSON.stringify(cfg.java_config.java_memory));
             await this.db.updateData('configClient', cfg);
-        }, 300);
+        };
 
-        // Min slider change handler
+        // Min slider - live display update
         this.eventManager.add(minSlider, 'input', () => {
             let minVal = parseFloat(minSlider.value);
             let maxVal = parseFloat(maxSlider.value);
 
-            // Ensure min doesn't exceed max
             if (minVal > maxVal) {
                 minVal = maxVal;
                 minSlider.value = minVal;
             }
 
             minValueDisplay.textContent = `${minVal} Go`;
-
-            // Debounced save to reduce DB writes
-            debouncedSave(minVal, maxVal);
         });
 
-        // Max slider change handler
+        // Max slider - live display update
         this.eventManager.add(maxSlider, 'input', () => {
             let minVal = parseFloat(minSlider.value);
             let maxVal = parseFloat(maxSlider.value);
 
-            // Ensure max doesn't go below min
             if (maxVal < minVal) {
                 maxVal = minVal;
                 maxSlider.value = maxVal;
             }
 
             maxValueDisplay.textContent = `${maxVal} Go`;
-
-            // Debounced save to reduce DB writes
-            debouncedSave(minVal, maxVal);
         });
+
+        // Save on slider release (change event fires once when user releases)
+        this.eventManager.add(minSlider, 'change', saveRam);
+        this.eventManager.add(maxSlider, 'change', saveRam);
     }
 
     async javaPath() {

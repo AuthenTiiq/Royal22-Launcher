@@ -1,7 +1,11 @@
 {
     "name": "royalcreeps-launcher",
     "preductname": "RoyalCreeps Launcher",
+<<<<<<< Updated upstream
     "version": "2.1.1",
+=======
+    "version": "2.1.3",
+>>>>>>> Stashed changes
     "description": "Launcher Minecraft de RoyalCreep's",
     "main": "src/app.js",
     "author": {
