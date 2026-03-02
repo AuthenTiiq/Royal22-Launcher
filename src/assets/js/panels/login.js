@@ -262,9 +262,9 @@ class Login {
             if (instance.whitelistActive) {
                 let whitelist = instance.whitelist.find(whitelist => whitelist == account.name)
                 if (whitelist !== account.name) {
-                    if (instance.name == instanceSelect) {
-                        let newInstanceSelect = instancesList.find(i => i.whitelistActive == false)
-                        configClient.instance_selct = newInstanceSelect.name
+                    if (instance.id == instanceSelect) {
+                        let newInstanceSelect = instancesList.find(i => i.id === 'royalcreeps') || instancesList.find(i => i.whitelistActive == false)
+                        configClient.instance_selct = newInstanceSelect.id
                         await setStatus(newInstanceSelect.status)
                     }
                 }

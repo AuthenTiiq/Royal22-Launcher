@@ -145,12 +145,12 @@ async function setStatus(opt) {
         statusServerElement.classList.remove('red');
         document.querySelector('.status-player-count').classList.remove('red');
         statusServerElement.innerHTML = `En ligne`;
-        playersOnline.innerHTML = serverData.players.online;
+        if (playersOnline) playersOnline.innerHTML = serverData.players.online;
     } else {
         statusServerElement.classList.add('red');
         statusServerElement.innerHTML = `Fermé`;
         document.querySelector('.status-player-count').classList.add('red');
-        playersOnline.innerHTML = '0';
+        if (playersOnline) playersOnline.innerHTML = '0';
     }
 }
 
