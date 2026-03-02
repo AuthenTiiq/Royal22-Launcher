@@ -167,9 +167,9 @@ class Settings {
             if (instance.whitelistActive) {
                 let whitelist = instance.whitelist.find(whitelist => whitelist == auth.name)
                 if (whitelist !== auth.name) {
-                    if (instance.name == instanceSelect) {
-                        let newInstanceSelect = instancesList.find(i => i.whitelistActive == false)
-                        configClient.instance_selct = newInstanceSelect.name
+                    if (instance.id == instanceSelect) {
+                        let newInstanceSelect = instancesList.find(i => i.id === 'royalcreeps') || instancesList.find(i => i.whitelistActive == false)
+                        configClient.instance_selct = newInstanceSelect.id
                         await setStatus(newInstanceSelect.status)
                     }
                 }

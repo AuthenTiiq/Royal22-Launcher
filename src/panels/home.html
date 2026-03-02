@@ -42,6 +42,7 @@
         <div class="play-wrapper">
             <div class="play-instance">
                 <button class="play-btn">JOUER</button>
+                <div class="instance-select icon-arrow" style="display: none;"></div>
             </div>
             <div class="info-starting-game">
                 <div class="info-starting-game-text">Connexion...</div>
@@ -51,10 +52,22 @@
     </div>
 
     <div class="instance-popup" style="display: none;">
-        <div class="instances-tab">
+        <div class="instances-tab master-detail">
             <div class="close-popup icon-close"></div>
-            <p>Choisissez votre instance</p>
-            <div class="instances-List"></div>
+            <div class="instances-layout">
+                <!-- Left Column: Instance List (Master) -->
+                <div class="instances-sidebar">
+                    <p class="sidebar-title">Instances</p>
+                    <div class="instances-List"></div>
+                </div>
+                <!-- Right Column: Details (Detail) -->
+                <div class="instances-details">
+                    <div class="details-content">
+                        <!-- Content injected via JS -->
+                        <div class="details-placeholder">Sélectionnez une instance</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

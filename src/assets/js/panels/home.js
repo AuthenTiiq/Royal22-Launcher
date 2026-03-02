@@ -111,62 +111,134 @@ class Home {
         let configClient = await this.db.readData('configClient')
         let auth = await this.db.readData('accounts', configClient.account_selected)
         let instancesList = await config.getInstanceList()
-        let instanceSelect = instancesList.find(i => i.name == configClient?.instance_selct) ? configClient?.instance_selct : null
+        let instanceSelect = instancesList.find(i => i.id == configClient?.instance_selct) ? configClient?.instance_selct : null
 
-        let instanceBTN = document.querySelector('.play-instance')
+        let instanceBTN = document.querySelector('.play-btn')
         let instancePopup = document.querySelector('.instance-popup')
         let instancesListPopup = document.querySelector('.instances-List')
         let instanceCloseBTN = document.querySelector('.close-popup')
 
-        if (instancesList.length === 1) {
-            // Instance selector removed from UI - only one instance exists
-            // No need to hide selector button
+        let instanceSelectBtn = document.querySelector('.instance-select')
+
+        if (instancesList.length > 1) {
+            if (instanceSelectBtn) {
+                instanceSelectBtn.style.display = 'flex'
+                this.eventManager.add(instanceSelectBtn, 'click', () => {
+                    instancePopup.style.display = 'flex'
+                    requestAnimationFrame(() => instancePopup.classList.add('active'))
+                })
+            }
+        } else {
+            if (instanceSelectBtn) instanceSelectBtn.style.display = 'none'
         }
 
         if (!instanceSelect) {
-            let newInstanceSelect = instancesList.find(i => i.whitelistActive == false)
+            let newInstanceSelect = instancesList.find(i => i.id === 'royalcreeps') || instancesList.find(i => i.whitelistActive == false)
             let configClient = await this.db.readData('configClient')
-            configClient.instance_selct = newInstanceSelect.name
-            instanceSelect = newInstanceSelect.name
+            configClient.instance_selct = newInstanceSelect.id
+            instanceSelect = newInstanceSelect.id
             await this.db.updateData('configClient', configClient)
         }
+
+        instancesListPopup.innerHTML = ''
+
+        // Sort instances so that 'royalcreeps' is always first
+        instancesList.sort((a, b) => {
+            if (a.id === 'royalcreeps') return -1;
+            if (b.id === 'royalcreeps') return 1;
+            return 0;
+        })
+
+        let renderDetails = (instanceId) => {
+            let instance = instancesList.find(i => i.id === instanceId)
+            let detailsContainer = document.querySelector('.details-content')
+            if (!instance) return;
+
+            let statusClass = instance.status === 'maintenance' ? 'status-maintenance' : 'status-online';
+            let statusText = instance.status === 'maintenance' ? 'Maintenance' : 'En Ligne';
+            // Fix broken unicode escapes where backslash is stripped
+            let cleanDesc = instance.description
+                ? instance.description.replace(/u([0-9a-fA-F]{4})/g, (m, hex) => String.fromCharCode(parseInt(hex, 16)))
+                : null;
+
+            let descriptionHTML = cleanDesc
+                ? `<div class="detail-description">${cleanDesc}</div>`
+                : `<div class="detail-description" style="font-style: italic; opacity: 0.5;">Aucune description disponible pour cette instance.</div>`;
+
+            detailsContainer.innerHTML = `
+                <div class="detail-header">
+                    <div class="detail-title">${instance.name || instance.id}</div>
+                    <div class="detail-status ${statusClass}">${statusText}</div>
+                </div>
+                ${descriptionHTML}
+                <div class="detail-actions">
+                    <button class="btn-select-instance" id="select-btn-${instance.id}">Sélectionner</button>
+                </div>
+            `;
+
+            // Add click event for the "Sélectionner" button
+            let selectBtn = document.getElementById(`select-btn-${instance.id}`);
+            if (selectBtn) {
+                // Must register event manually because eventManager might clear it, or we can use eventManager but with care 
+                // since this DOM node gets destroyed. Better to handle it directly on the document or re-bind.
+                // We'll bind it here directly since it's re-created entirely on click.
+                selectBtn.addEventListener('click', async () => {
+                    let configClient = await this.db.readData('configClient')
+                    configClient.instance_selct = instance.id
+                    await this.db.updateData('configClient', configClient)
+
+                    instanceSelect = instancesList.filter(i => i.id == instance.id)
+                    instanceSelect = instancesList.filter(i => i.id == instance.id) // keep original double logic just to be safe
+
+                    instancePopup.classList.remove('active');
+                    setTimeout(() => instancePopup.style.display = 'none', 300);
+
+                    await setStatus(instance.status)
+                });
+            }
+        };
 
         for (let instance of instancesList) {
             if (instance.whitelistActive) {
                 let whitelist = instance.whitelist.find(whitelist => whitelist == auth?.name)
                 if (whitelist !== auth?.name) {
-                    if (instance.name == instanceSelect) {
-                        let newInstanceSelect = instancesList.find(i => i.whitelistActive == false)
+                    if (instance.id == instanceSelect) {
+                        let newInstanceSelect = instancesList.find(i => i.id === 'royalcreeps') || instancesList.find(i => i.whitelistActive == false)
                         let configClient = await this.db.readData('configClient')
-                        configClient.instance_selct = newInstanceSelect.name
-                        instanceSelect = newInstanceSelect.name
+                        configClient.instance_selct = newInstanceSelect.id
+                        instanceSelect = newInstanceSelect.id
                         setStatus(newInstanceSelect.status)
                         await this.db.updateData('configClient', configClient)
                     }
                 }
-            } else console.log(`Initializing instance ${instance.name}...`)
-            if (instance.name == instanceSelect) setStatus(instance.status)
+            } else {
+                let DOM = document.createElement('div')
+                DOM.classList.add('instance-elements')
+                DOM.id = instance.id
+                if (instance.id == instanceSelect) {
+                    DOM.classList.add('active-instance')
+                    // Pre-render the active instance details right away
+                    renderDetails(instance.id)
+                }
+                DOM.innerHTML = `
+                <div class="instance-elements-name" style="pointer-events: none;">${instance.name || instance.id}</div>
+                `
+                instancesListPopup.appendChild(DOM)
+            }
+            if (instance.id == instanceSelect) setStatus(instance.status)
         }
 
         this.eventManager.add(instancePopup, 'click', async e => {
-            let configClient = await this.db.readData('configClient')
-
-            if (e.target.classList.contains('instance-elements')) {
-                let newInstanceSelect = e.target.id
+            let target = e.target.closest('.instance-elements');
+            if (target) {
+                let newInstanceSelect = target.id
                 let activeInstanceSelect = document.querySelector('.active-instance')
 
-                if (activeInstanceSelect) activeInstanceSelect.classList.toggle('active-instance');
+                if (activeInstanceSelect) activeInstanceSelect.classList.remove('active-instance');
                 e.target.classList.add('active-instance');
 
-                configClient.instance_selct = newInstanceSelect
-                await this.db.updateData('configClient', configClient)
-                instanceSelect = instancesList.filter(i => i.name == newInstanceSelect)
-                instanceSelect = instancesList.filter(i => i.name == newInstanceSelect)
-                instancePopup.classList.remove('active');
-                setTimeout(() => instancePopup.style.display = 'none', 300);
-                let instance = await config.getInstanceList()
-                let options = instance.find(i => i.name == configClient.instance_selct)
-                await setStatus(options.status)
+                // Render detail pane (do NOT save to config or close popup yet)
+                renderDetails(newInstanceSelect);
             }
         })
 
@@ -186,7 +258,7 @@ class Home {
         let configClient = await this.db.readData('configClient')
         let instance = await config.getInstanceList()
         let authenticator = await this.db.readData('accounts', configClient.account_selected)
-        let options = instance.find(i => i.name == configClient.instance_selct)
+        let options = instance.find(i => i.id == configClient.instance_selct)
 
         let playInstanceBTN = document.querySelector('.play-instance')
         let infoStartingBOX = document.querySelector('.info-starting-game')
@@ -198,7 +270,7 @@ class Home {
             authenticator: authenticator,
             timeout: 10000,
             path: `${await appdata()}/${process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`}`,
-            instance: options.name,
+            instance: options.id,
             version: options.loadder.minecraft_version,
             detached: configClient?.launcher_config?.closeLauncher == "close-all" ? false : true,
             downloadFileMultiple: configClient?.launcher_config?.download_multi || 5,
