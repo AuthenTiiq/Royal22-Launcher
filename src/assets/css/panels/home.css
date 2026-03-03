@@ -668,3 +668,58 @@
 .btn-select-instance:active {
     transform: translateY(0);
 }
+
+/* --- News Popup --- */
+.news-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.news-popup.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.news-popup .news-overlay-tab {
+    transform: translateY(20px);
+    padding: 30px;
+}
+
+.news-popup.active .news-overlay-tab {
+    transform: translateY(0);
+}
+
+.read-more-btn {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 6px 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: var(--element-color);
+    font-size: 0.85rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.read-more-btn:hover {
+    background: var(--element-color);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px var(--element-color-transparent);
+}

@@ -57,6 +57,15 @@ class Home {
                     let date = this.getdate(News.publish_date)
                     let blockNews = document.createElement('div');
                     blockNews.className = 'news-block';
+
+                    let contentHtml = '';
+                    if (News.content.length > 150) {
+                        contentHtml = `<p>${News.content.replace(/\n/g, '</br>').substring(0, 150) + '...'}</p>
+                                       <div class="read-more-btn" data-title="${News.title.replace(/"/g, '&quot;')}" data-author="${News.author.replace(/"/g, '&quot;')}" data-date="${date.day} ${date.month}" data-content="${News.content.replace(/"/g, '&quot;').replace(/\n/g, '</br>')}">Afficher plus</div>`;
+                    } else {
+                        contentHtml = `<p>${News.content.replace(/\n/g, '</br>')}</p>`;
+                    }
+
                     blockNews.innerHTML = `
                         <div class="news-header">
                             <img src="assets/images/icon.png">
@@ -67,12 +76,52 @@ class Home {
                         </div>
                         <div class="news-content">
                             <div class="bbWrapper">
-                                <p>${News.content.replace(/\n/g, '</br>').substring(0, 150) + '...'}</p>
+                                ${contentHtml}
                                 <p class="news-author">Publié par <span>${News.author}</span></p>
                             </div>
                         </div>`
                     newsElement.appendChild(blockNews);
                 }
+
+                // Add popup logic
+                setTimeout(() => {
+                    let readMoreBtns = document.querySelectorAll('.read-more-btn');
+                    let newsPopup = document.querySelector('.news-popup');
+                    if (newsPopup) {
+                        // Move the popup to the body so it escapes the stacking context of `.panels`
+                        if (newsPopup.parentElement !== document.body) {
+                            document.body.appendChild(newsPopup);
+                        }
+
+                        let popupTitle = document.querySelector('.news-popup-title');
+                        let popupDate = document.querySelector('.news-popup-date');
+                        let popupAuthor = document.querySelector('.news-popup-author');
+                        let popupBody = document.querySelector('.news-popup-body');
+
+                        readMoreBtns.forEach(btn => {
+                            btn.addEventListener('click', () => {
+                                popupTitle.innerHTML = btn.getAttribute('data-title');
+                                popupAuthor.innerHTML = `Publié par <span>${btn.getAttribute('data-author')}</span>`;
+                                popupDate.innerHTML = btn.getAttribute('data-date');
+                                popupBody.innerHTML = btn.getAttribute('data-content');
+                                newsPopup.classList.add('active');
+                            });
+                        });
+
+                        let closeBtn = document.querySelector('.close-news-popup');
+                        if (closeBtn) {
+                            closeBtn.addEventListener('click', () => {
+                                newsPopup.classList.remove('active');
+                            });
+                        }
+
+                        window.addEventListener('click', (e) => {
+                            if (e.target === newsPopup) {
+                                newsPopup.classList.remove('active');
+                            }
+                        });
+                    }
+                }, 100);
             }
         } else {
             let blockNews = document.createElement('div');
