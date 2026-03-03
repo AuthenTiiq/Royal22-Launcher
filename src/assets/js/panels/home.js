@@ -352,7 +352,7 @@ class Home {
         }
 
         // Custom JVM Arguments support
-        let jvmArgsStr = configClient?.java_config?.jvm_args;
+        let jvmArgsStr = configClient?.java_config?.jvm_args ?? "-XX:+UseZGC -XX:+ZGenerational";
         if (jvmArgsStr && jvmArgsStr.trim() !== '') {
             // Regex to match args, keeping those inside quotes together
             const argsRegex = /(?:[^\s"']+|"[^"]*"|'[^']*')+/g;

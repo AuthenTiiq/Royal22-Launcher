@@ -301,7 +301,7 @@ class Settings {
 
         // Custom JVM Arguments
         let jvmArgsInput = document.querySelector(".jvm-args-input");
-        let jvmArgs = configClient?.java_config?.jvm_args || "";
+        let jvmArgs = configClient?.java_config?.jvm_args ?? "-XX:+UseZGC -XX:+ZGenerational";
         jvmArgsInput.value = jvmArgs;
 
         this.eventManager.add(jvmArgsInput, "change", async () => {
