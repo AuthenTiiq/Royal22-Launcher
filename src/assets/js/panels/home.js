@@ -299,6 +299,19 @@ class Home {
             },
         }
 
+        // Custom JVM Arguments support
+        let jvmArgsStr = configClient?.java_config?.jvm_args;
+        if (jvmArgsStr && jvmArgsStr.trim() !== '') {
+            // Regex to match args, keeping those inside quotes together
+            const argsRegex = /(?:[^\s"']+|"[^"]*"|'[^']*')+/g;
+            const parsedArgs = jvmArgsStr.match(argsRegex);
+
+            if (parsedArgs) {
+                // Remove quotes from matched strings
+                opt.JVM_ARGS = parsedArgs.map(arg => arg.replace(/^["'](.*)["']$/, '$1'));
+            }
+        }
+
         launch.Launch(opt);
 
         playInstanceBTN.classList.add('hidden');

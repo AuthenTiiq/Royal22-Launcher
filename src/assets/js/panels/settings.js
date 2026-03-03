@@ -298,6 +298,18 @@ class Settings {
             configClient.java_config.java_path = null
             await this.db.updateData('configClient', configClient);
         });
+
+        // Custom JVM Arguments
+        let jvmArgsInput = document.querySelector(".jvm-args-input");
+        let jvmArgs = configClient?.java_config?.jvm_args || "";
+        jvmArgsInput.value = jvmArgs;
+
+        this.eventManager.add(jvmArgsInput, "change", async () => {
+            let configClient = await this.db.readData('configClient');
+            if (!configClient.java_config) configClient.java_config = {};
+            configClient.java_config.jvm_args = jvmArgsInput.value;
+            await this.db.updateData('configClient', configClient);
+        });
     }
 
     async resolution() {
