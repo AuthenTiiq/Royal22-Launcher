@@ -164,6 +164,9 @@ class Home {
 
         let instanceBTN = document.querySelector('.play-btn')
         let instancePopup = document.querySelector('.instance-popup')
+        if (instancePopup && instancePopup.parentElement !== document.body) {
+            document.body.appendChild(instancePopup);
+        }
         let instancesListPopup = document.querySelector('.instances-List')
         let instanceCloseBTN = document.querySelector('.close-popup')
 
