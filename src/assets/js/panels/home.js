@@ -151,7 +151,7 @@ class Home {
 
         socials.forEach(social => {
             this.eventManager.add(social, 'click', e => {
-                shell.openExternal(e.target.dataset.url)
+                shell.openExternal(e.currentTarget.dataset.url)
             })
         });
     }
@@ -239,13 +239,12 @@ class Home {
                     configClient.instance_selct = instance.id
                     await this.db.updateData('configClient', configClient)
 
-                    instanceSelect = instancesList.filter(i => i.id == instance.id)
-                    instanceSelect = instancesList.filter(i => i.id == instance.id) // keep original double logic just to be safe
+                    instanceSelect = instance.id
 
                     instancePopup.classList.remove('active');
                     setTimeout(() => instancePopup.style.display = 'none', 300);
 
-                    await setStatus(instance.status)
+                    await setStatus(instance)
                 });
             }
         };
@@ -259,7 +258,7 @@ class Home {
                         let configClient = await this.db.readData('configClient')
                         configClient.instance_selct = newInstanceSelect.id
                         instanceSelect = newInstanceSelect.id
-                        setStatus(newInstanceSelect.status)
+                        setStatus(newInstanceSelect)
                         await this.db.updateData('configClient', configClient)
                     }
                 }
@@ -277,7 +276,7 @@ class Home {
                 `
                 instancesListPopup.appendChild(DOM)
             }
-            if (instance.id == instanceSelect) setStatus(instance.status)
+            if (instance.id == instanceSelect) setStatus(instance)
         }
 
         this.eventManager.add(instancePopup, 'click', async e => {

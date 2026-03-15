@@ -170,7 +170,7 @@ class Settings {
                     if (instance.id == instanceSelect) {
                         let newInstanceSelect = instancesList.find(i => i.id === 'royalcreeps') || instancesList.find(i => i.whitelistActive == false)
                         configClient.instance_selct = newInstanceSelect.id
-                        await setStatus(newInstanceSelect.status)
+                        await setStatus(newInstanceSelect)
                     }
                 }
             }

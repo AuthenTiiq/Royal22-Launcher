@@ -124,32 +124,33 @@ async function getServerInfo() {
     }
 }
 
-async function setStatus(opt) {
+async function setStatus(instance) {
     let nameServerElement = document.querySelector('.server-status-name');
     let statusServerElement = document.querySelector('.server-status-text');
+    let statusPill = document.querySelector('.status-player-count');
     let playersOnline = document.querySelector('.status-player-count .player-count');
 
-    if (!opt) {
-        statusServerElement.classList.add('red');
-        statusServerElement.innerHTML = `Fermé`;
-        document.querySelector('.status-player-count').classList.add('red');
-        playersOnline.innerHTML = '0';
+    if (!instance || instance.status === 'maintenance') {
+        if (statusServerElement) statusServerElement.classList.add('red');
+        if (statusServerElement) statusServerElement.innerHTML = `Fermé`;
+        if (statusPill) statusPill.classList.add('red');
+        if (playersOnline) playersOnline.innerHTML = '0';
+        if (instance && nameServerElement) nameServerElement.innerHTML = instance.name || instance.id;
         return;
     }
 
-    let { ip, port, nameServer } = opt;
-    nameServerElement.innerHTML = nameServer;
+    if (nameServerElement) nameServerElement.innerHTML = instance.name || instance.id;
 
     const serverData = await getServerInfo();
     if (serverData && serverData.online) {
-        statusServerElement.classList.remove('red');
-        document.querySelector('.status-player-count').classList.remove('red');
-        statusServerElement.innerHTML = `En ligne`;
+        if (statusServerElement) statusServerElement.classList.remove('red');
+        if (statusPill) statusPill.classList.remove('red');
+        if (statusServerElement) statusServerElement.innerHTML = `En ligne`;
         if (playersOnline) playersOnline.innerHTML = serverData.players.online;
     } else {
-        statusServerElement.classList.add('red');
-        statusServerElement.innerHTML = `Fermé`;
-        document.querySelector('.status-player-count').classList.add('red');
+        if (statusServerElement) statusServerElement.classList.add('red');
+        if (statusServerElement) statusServerElement.innerHTML = `Fermé`;
+        if (statusPill) statusPill.classList.add('red');
         if (playersOnline) playersOnline.innerHTML = '0';
     }
 }

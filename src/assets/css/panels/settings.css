@@ -13,7 +13,6 @@
     width: calc(100% - 20px);
     height: calc(100% - 40px);
     margin: 10px;
-    margin: 10px;
     background: var(--background-glass);
     backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
@@ -163,10 +162,7 @@ input[type="text"] {
     display: flex;
     gap: 20px;
     padding: 12px;
-    gap: 20px;
-    padding: 12px;
     background: var(--input-bg);
-    border-radius: 8px;
     border-radius: 8px;
     font-size: 0.9rem;
 }
@@ -249,9 +245,6 @@ input[type="text"] {
     text-align: right;
     font-weight: 600;
     color: var(--element-color);
-    text-align: right;
-    font-weight: 600;
-    color: var(--element-color);
     background: var(--input-bg);
     padding: 6px 12px;
     border-radius: 8px;
@@ -288,12 +281,9 @@ input[type="text"] {
     background: rgba(255, 255, 255, 0.1);
 }
 
-/* Active state logic usually handled by JS toggling a class like .active-btn 
-   But the current JS uses specific classes. We will trust the JS to add 'active-btn' or similar.
-   Actually, previous CSS relied on specific classes. We might need to update JS or ensure these selectors work. */
-
-.theme-btn.active,
-.close-btn.active {
+/* Active state matches the class names added by settings.js */
+.theme-btn.active-theme,
+.close-btn.active-close {
     background: var(--element-color);
     color: white;
 }
