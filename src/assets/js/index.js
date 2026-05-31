@@ -56,10 +56,6 @@ class Splash {
     async checkUpdate() {
         this.setStatus(`Recherche de mise à jour...`);
 
-        ipcRenderer.invoke('update-app').then().catch(err => {
-            return this.shutdown(`erreur lors de la recherche de mise à jour :<br>${err.message}`);
-        });
-
         ipcRenderer.on('updateAvailable', () => {
             this.setStatus(`Mise à jour disponible !<br>MacOS : royalcreeps.fr/launcher <br>`);
             if (os.platform() == 'win32') ipcRenderer.send('start-update');
@@ -80,6 +76,87 @@ class Splash {
             console.error("Mise à jour non disponible");
             this.maintenanceCheck();
         })
+
+        if (os.platform() == 'darwin') {
+            try {
+                const macUpdate = await this.checkMacUpdate();
+                if (macUpdate.available) return this.dowloadUpdate(macUpdate.release);
+            } catch (err) {
+                console.error('Erreur lors de la recherche de mise a jour macOS:', err);
+            }
+
+            return this.maintenanceCheck();
+        }
+
+        try {
+            await ipcRenderer.invoke('update-app');
+        } catch (err) {
+            return this.shutdown(`erreur lors de la recherche de mise à jour :<br>${this.getErrorMessage(err)}`);
+        }
+    }
+
+    getRepositorySlug() {
+        return pkg.repository.url
+            .replace('git+', '')
+            .replace('.git', '')
+            .replace('https://github.com/', '')
+            .split('/');
+    }
+
+    normalizeVersion(version) {
+        return String(version || '').trim().replace(/^v/i, '');
+    }
+
+    compareVersions(currentVersion, latestVersion) {
+        const currentParts = this.normalizeVersion(currentVersion).split('.').map(part => Number.parseInt(part, 10) || 0);
+        const latestParts = this.normalizeVersion(latestVersion).split('.').map(part => Number.parseInt(part, 10) || 0);
+        const maxLength = Math.max(currentParts.length, latestParts.length);
+
+        for (let index = 0; index < maxLength; index++) {
+            const currentPart = currentParts[index] ?? 0;
+            const latestPart = latestParts[index] ?? 0;
+
+            if (currentPart < latestPart) return -1;
+            if (currentPart > latestPart) return 1;
+        }
+
+        return 0;
+    }
+
+    async fetchLatestRelease() {
+        const [owner, repo] = this.getRepositorySlug();
+        const response = await nodeFetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`, {
+            headers: {
+                Accept: 'application/vnd.github+json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`GitHub API a répondu ${response.status}`);
+        }
+
+        return response.json();
+    }
+
+    async checkMacUpdate() {
+        const latestRelease = await this.fetchLatestRelease();
+        const latestVersion = this.normalizeVersion(latestRelease.tag_name || latestRelease.name);
+
+        if (!latestVersion || this.compareVersions(pkg.version, latestVersion) >= 0) {
+            return { available: false };
+        }
+
+        const release = this.getLatestReleaseForOS('mac', '.dmg', latestRelease.assets || []);
+        return {
+            available: Boolean(release),
+            release
+        };
+    }
+
+    getErrorMessage(error) {
+        if (!error) return 'Erreur inconnue';
+        if (typeof error === 'string') return error;
+        return error.message || error.stack || JSON.stringify(error);
     }
 
     getLatestReleaseForOS(os, preferredFormat, asset) {
@@ -91,26 +168,24 @@ class Splash {
         }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
     }
 
-    async dowloadUpdate() {
-        const repoURL = pkg.repository.url.replace("git+", "").replace(".git", "").replace("https://github.com/", "").split("/");
-        const githubAPI = await nodeFetch('https://api.github.com').then(res => res.json()).catch(err => err);
+    async dowloadUpdate(latest = null) {
+        let release = latest;
 
-        const githubAPIRepoURL = githubAPI.repository_url.replace("{owner}", repoURL[0]).replace("{repo}", repoURL[1]);
-        const githubAPIRepo = await nodeFetch(githubAPIRepoURL).then(res => res.json()).catch(err => err);
+        if (!release) {
+            const latestRelease = await this.fetchLatestRelease();
+            if (os.platform() == 'darwin') release = this.getLatestReleaseForOS('mac', '.dmg', latestRelease.assets || []);
+            else if (os.platform() == 'linux') release = this.getLatestReleaseForOS('linux', '.appimage', latestRelease.assets || []);
+        }
 
-        const releases_url = await nodeFetch(githubAPIRepo.releases_url.replace("{/id}", '')).then(res => res.json()).catch(err => err);
-        const latestRelease = releases_url[0].assets;
-        let latest;
-
-        if (os.platform() == 'darwin') latest = this.getLatestReleaseForOS('mac', '.dmg', latestRelease);
-        else if (os == 'linux') latest = this.getLatestReleaseForOS('linux', '.appimage', latestRelease);
-
+        if (!release?.browser_download_url) {
+            return this.shutdown("Aucune mise à jour téléchargeable n'a été trouvée.");
+        }
 
         this.setStatus(`Mise à jour disponible !<br><div class="download-update">Télécharger</div>`);
         document.querySelector(".download-update").addEventListener("click", () => {
-            shell.openExternal(latest.browser_download_url);
+            shell.openExternal(release.browser_download_url);
             return this.shutdown("Téléchargement en cours...");
-        });
+        }, { once: true });
     }
 
 
