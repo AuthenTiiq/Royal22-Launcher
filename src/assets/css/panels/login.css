@@ -41,7 +41,7 @@
     font-weight: bold;
     margin: 15px 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .connect:hover,
@@ -62,13 +62,14 @@
     width: 60%;
     padding: 0.6rem 1.2rem;
     margin-top: 15px;
-    transition: all 0.3s ease;
+    outline: none;
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input-login .email:focus,
 .input-login .password:focus,
 .A2F:focus {
     background: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 10px var(--element-color);
-    width: 65%;
+    border-color: var(--element-color);
+    box-shadow: 0 0 0 3px var(--element-color-transparent), 0 0 10px var(--element-color);
 }

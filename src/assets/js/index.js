@@ -3,11 +3,55 @@
  * @license CC-BY-NC 4.0 - https://creativecommons.org/licenses/by-nc/4.0
  */
 
-const { ipcRenderer, shell } = require('electron');
-const pkg = require('../package.json');
-const os = require('os');
-import { config, database } from './utils.js';
-const nodeFetch = require("node-fetch");
+const updateAPI = window.updateAPI;
+
+if (!updateAPI) throw new Error('updateAPI preload indisponible');
+
+const allowedStatusTags = new Set(['B', 'BR', 'DIV', 'EM', 'I', 'SPAN', 'STRONG']);
+const allowedStatusAttributes = {
+    DIV: new Set(['class']),
+};
+
+function sanitizeStatusHTML(value) {
+    const template = document.createElement('template');
+    template.innerHTML = String(value || '');
+
+    for (const node of Array.from(template.content.childNodes)) {
+        sanitizeStatusNode(node);
+    }
+
+    return template.innerHTML;
+}
+
+function sanitizeStatusNode(node) {
+    if (node.nodeType === Node.TEXT_NODE) return;
+
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+        node.remove();
+        return;
+    }
+
+    if (!allowedStatusTags.has(node.tagName)) {
+        node.replaceWith(document.createTextNode(node.textContent || ''));
+        return;
+    }
+
+    for (const attribute of Array.from(node.attributes)) {
+        const allowedAttributes = allowedStatusAttributes[node.tagName];
+        if (!allowedAttributes?.has(attribute.name)) {
+            node.removeAttribute(attribute.name);
+            continue;
+        }
+
+        if (attribute.name === 'class' && attribute.value !== 'download-update') {
+            node.removeAttribute(attribute.name);
+        }
+    }
+
+    for (const child of Array.from(node.childNodes)) {
+        sanitizeStatusNode(child);
+    }
+}
 
 
 class Splash {
@@ -18,12 +62,10 @@ class Splash {
         this.message = document.querySelector(".message");
         this.progress = document.querySelector(".progress");
         document.addEventListener('DOMContentLoaded', async () => {
-            let databaseLauncher = new database();
-            let configClient = await databaseLauncher.readData('configClient');
-            let theme = configClient?.launcher_config?.theme || "auto"
-            let isDarkTheme = await ipcRenderer.invoke('is-dark-theme', theme).then(res => res)
+            let theme = await updateAPI.getLauncherTheme();
+            let isDarkTheme = await updateAPI.isDarkTheme(theme).then(res => res)
             document.body.className = isDarkTheme ? 'dark global' : 'light global';
-            if (process.platform == 'win32') ipcRenderer.send('update-window-progress-load')
+            if (updateAPI.platform == 'win32') updateAPI.showProgressLoad()
             this.startAnimation()
         });
     }
@@ -56,28 +98,28 @@ class Splash {
     async checkUpdate() {
         this.setStatus(`Recherche de mise à jour...`);
 
-        ipcRenderer.on('updateAvailable', () => {
+        updateAPI.onUpdateAvailable(() => {
             this.setStatus(`Mise à jour disponible !<br>MacOS : royalcreeps.fr/launcher <br>`);
-            if (os.platform() == 'win32') ipcRenderer.send('start-update');
+            if (updateAPI.platform == 'win32') updateAPI.startUpdate();
             else return this.dowloadUpdate();
         })
 
-        ipcRenderer.on('error', (event, err) => {
+        updateAPI.onError((err) => {
             if (err) return this.shutdown(`${err.message}`);
         })
 
-        ipcRenderer.on('download-progress', (event, progress) => {
+        updateAPI.onDownloadProgress((progress) => {
             this.toggleProgress();
-            ipcRenderer.send('update-window-progress', { progress: progress.transferred, size: progress.total })
+            updateAPI.setWindowProgress({ progress: progress.transferred, size: progress.total })
             this.setProgress(progress.transferred, progress.total);
         })
 
-        ipcRenderer.on('update-not-available', () => {
+        updateAPI.onUpdateNotAvailable(() => {
             console.error("Mise à jour non disponible");
             this.maintenanceCheck();
         })
 
-        if (os.platform() == 'darwin') {
+        if (updateAPI.platform == 'darwin') {
             try {
                 const macUpdate = await this.checkMacUpdate();
                 if (macUpdate.available) return this.dowloadUpdate(macUpdate.release);
@@ -89,18 +131,10 @@ class Splash {
         }
 
         try {
-            await ipcRenderer.invoke('update-app');
+            await updateAPI.checkForUpdates();
         } catch (err) {
             return this.shutdown(`erreur lors de la recherche de mise à jour :<br>${this.getErrorMessage(err)}`);
         }
-    }
-
-    getRepositorySlug() {
-        return pkg.repository.url
-            .replace('git+', '')
-            .replace('.git', '')
-            .replace('https://github.com/', '')
-            .split('/');
     }
 
     normalizeVersion(version) {
@@ -124,25 +158,14 @@ class Splash {
     }
 
     async fetchLatestRelease() {
-        const [owner, repo] = this.getRepositorySlug();
-        const response = await nodeFetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`, {
-            headers: {
-                Accept: 'application/vnd.github+json'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`GitHub API a répondu ${response.status}`);
-        }
-
-        return response.json();
+        return updateAPI.fetchLatestRelease();
     }
 
     async checkMacUpdate() {
         const latestRelease = await this.fetchLatestRelease();
         const latestVersion = this.normalizeVersion(latestRelease.tag_name || latestRelease.name);
 
-        if (!latestVersion || this.compareVersions(pkg.version, latestVersion) >= 0) {
+        if (!latestVersion || this.compareVersions(updateAPI.appInfo.version, latestVersion) >= 0) {
             return { available: false };
         }
 
@@ -173,8 +196,8 @@ class Splash {
 
         if (!release) {
             const latestRelease = await this.fetchLatestRelease();
-            if (os.platform() == 'darwin') release = this.getLatestReleaseForOS('mac', '.dmg', latestRelease.assets || []);
-            else if (os.platform() == 'linux') release = this.getLatestReleaseForOS('linux', '.appimage', latestRelease.assets || []);
+            if (updateAPI.platform == 'darwin') release = this.getLatestReleaseForOS('mac', '.dmg', latestRelease.assets || []);
+            else if (updateAPI.platform == 'linux') release = this.getLatestReleaseForOS('linux', '.appimage', latestRelease.assets || []);
         }
 
         if (!release?.browser_download_url) {
@@ -182,15 +205,15 @@ class Splash {
         }
 
         this.setStatus(`Mise à jour disponible !<br><div class="download-update">Télécharger</div>`);
-        document.querySelector(".download-update").addEventListener("click", () => {
-            shell.openExternal(release.browser_download_url);
+        document.querySelector(".download-update").addEventListener("click", async () => {
+            await updateAPI.openExternal(release.browser_download_url);
             return this.shutdown("Téléchargement en cours...");
         }, { once: true });
     }
 
 
     async maintenanceCheck() {
-        config.GetConfig().then(res => {
+        updateAPI.getRemoteConfig().then(res => {
             if (res.maintenance) return this.shutdown(res.maintenance_message);
             this.startLauncher();
         }).catch(e => {
@@ -201,8 +224,8 @@ class Splash {
 
     startLauncher() {
         this.setStatus(`Démarrage du launcher`);
-        ipcRenderer.send('main-window-open');
-        ipcRenderer.send('update-window-close');
+        updateAPI.openMainWindow();
+        updateAPI.closeUpdateWindow();
     }
 
     shutdown(text) {
@@ -212,13 +235,13 @@ class Splash {
             this.setStatus(`${text}<br>Arrêt dans ${i--}s`);
             if (i < 0) {
                 clearInterval(shutdownInterval); // Prevent memory leak
-                ipcRenderer.send('update-window-close');
+                updateAPI.closeUpdateWindow();
             }
         }, 1000);
     }
 
     setStatus(text) {
-        this.message.innerHTML = text;
+        this.message.innerHTML = sanitizeStatusHTML(text);
     }
 
     toggleProgress() {
@@ -237,7 +260,7 @@ function sleep(ms) {
 
 document.addEventListener("keydown", (e) => {
     if (e.ctrlKey && e.shiftKey && e.keyCode == 73 || e.keyCode == 123) {
-        ipcRenderer.send("update-window-dev-tools");
+        updateAPI.openDevTools();
     }
 })
 new Splash();

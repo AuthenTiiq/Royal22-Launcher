@@ -194,7 +194,11 @@
     cursor: pointer;
     overflow: hidden;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition:
+        transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.22s ease,
+        filter 0.22s ease;
+    will-change: transform;
 
     /* Glassmorphism border */
     box-shadow:
@@ -202,31 +206,6 @@
         0 0 0 1px rgba(255, 255, 255, 0.15),
         inset 0 1px 0 rgba(255, 255, 255, 0.2),
         inset 0 -2px 0 rgba(0, 0, 0, 0.15);
-
-    /* Pulse animation */
-    animation: pulse-glow 3s ease-in-out infinite;
-}
-
-/* Pulse glow animation */
-@keyframes pulse-glow {
-
-    0%,
-    100% {
-        box-shadow:
-            0 8px 32px var(--element-color-transparent),
-            0 0 0 1px rgba(255, 255, 255, 0.15),
-            inset 0 1px 0 rgba(255, 255, 255, 0.2),
-            inset 0 -2px 0 rgba(0, 0, 0, 0.15);
-    }
-
-    50% {
-        box-shadow:
-            0 8px 40px var(--element-color-glow),
-            0 0 60px var(--element-color-transparent),
-            0 0 0 1px rgba(255, 255, 255, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.2),
-            inset 0 -2px 0 rgba(0, 0, 0, 0.15);
-    }
 }
 
 /* Shine effect */
@@ -250,10 +229,10 @@
 
 .play-btn:hover {
     transform: scale(1.05) translateY(-3px);
-    animation: none;
+    filter: brightness(1.04);
     box-shadow:
-        0 15px 50px var(--element-color-glow),
-        0 0 80px var(--element-color-transparent),
+        0 12px 34px var(--element-color-glow),
+        0 0 36px var(--element-color-transparent),
         0 0 0 2px rgba(255, 255, 255, 0.25),
         inset 0 1px 0 rgba(255, 255, 255, 0.3),
         inset 0 -2px 0 rgba(0, 0, 0, 0.15);
@@ -273,6 +252,13 @@
     margin-left: 12px;
     font-size: 0.9rem;
     opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .play-btn,
+    .play-btn::before {
+        transition: none;
+    }
 }
 
 .instance-select {
@@ -697,6 +683,27 @@
 .news-popup .news-overlay-tab {
     transform: translateY(20px);
     padding: 30px;
+}
+
+.news-popup .detail-header {
+    gap: 16px;
+    padding-right: 58px;
+}
+
+.news-popup .news-popup-title {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    line-height: 1.15;
+}
+
+.news-popup .news-popup-date {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.news-popup .close-news-popup {
+    top: 22px;
+    right: 22px;
 }
 
 .news-popup.active .news-overlay-tab {

@@ -19,19 +19,23 @@ const fs = require('fs');
 class Launcher {
     async init() {
         this.eventManager = new EventManager();
+        this.accountRefreshPromises = new Map();
+        window.launcherAccountRefresh = {
+            waitFor: accountID => this.waitForAccountRefresh(accountID)
+        };
         this.initLog();
         console.log('Initializing Launcher...');
         this.shortcut()
-        await setBackground()
+        this.initBackground();
+        let backgroundReady = setBackground().catch(err => console.error('Background initialization failed:', err));
         if (process.platform == 'win32') this.initFrame();
-        this.config = await config.GetConfig().then(res => res).catch(err => err);
-        if (await this.config.error) return this.errorConnect()
         this.db = new database();
-        await this.initConfigClient();
+        this.config = await this.loadConfig();
+        if (await this.config.error) return this.errorConnect()
+        await Promise.all([backgroundReady, this.initConfigClient()]);
         this.createPanels(Login, Home, Settings);
         this.initGlobalNavigation();
         this.startLauncher();
-        this.initBackground();
         this.eventManager.add(ipcRenderer, 'open-settings-panel', () => {
             this.showSettingsPanel();
         });
@@ -45,8 +49,7 @@ class Launcher {
         });
 
         this.eventManager.add(document.getElementById('nav-settings'), 'click', () => {
-            changePanel('settings');
-            this.updateNavState('nav-settings');
+            this.showSettingsPanel();
         });
 
 
@@ -58,7 +61,9 @@ class Launcher {
     }
 
     showSettingsPanel() {
+        this.initPanel('settings');
         changePanel('settings');
+        this.updateNavState('nav-settings');
     }
 
     initLog() {
@@ -128,6 +133,39 @@ class Launcher {
         });
     }
 
+    async loadConfig() {
+        let cachedConfig = await this.db.readData('launcherConfigCache').catch(() => undefined);
+        let remoteConfig = config.GetConfig().then(async res => {
+            if (!res?.error) await this.saveConfigCache(res);
+            return res;
+        }).catch(err => err);
+
+        if (cachedConfig?.config) {
+            remoteConfig.then(res => {
+                if (!res?.error) this.config = res;
+            }).catch(err => console.error('Background config refresh failed:', err));
+
+            return cachedConfig.config;
+        }
+
+        return await remoteConfig;
+    }
+
+    async saveConfigCache(remoteConfig) {
+        try {
+            let cachedConfig = await this.db.readData('launcherConfigCache');
+            let data = {
+                config: remoteConfig,
+                cachedAt: Date.now()
+            };
+
+            if (cachedConfig) return await this.db.updateData('launcherConfigCache', data, cachedConfig.ID);
+            return await this.db.createData('launcherConfigCache', data);
+        } catch (err) {
+            console.error('Config cache update failed:', err);
+        }
+    }
+
     initFrame() {
         console.log('Initializing Frame...')
         document.querySelector('.frame').classList.toggle('hide')
@@ -184,6 +222,7 @@ class Launcher {
     }
 
     createPanels(...panels) {
+        this.panelControllers = new Map();
         let panelsElem = document.querySelector('.panels')
         for (let panel of panels) {
             console.log(`Initializing ${panel.name} Panel...`);
@@ -191,146 +230,149 @@ class Launcher {
             div.classList.add('panel', panel.id)
             div.innerHTML = fs.readFileSync(`${__dirname}/panels/${panel.id}.html`, 'utf8');
             panelsElem.appendChild(div);
-            new panel().init(this.config);
+            let instance = new panel();
+            this.panelControllers.set(panel.id, { instance, initialized: panel.id !== 'settings' });
+            if (panel.id !== 'settings') instance.init(this.config);
+        }
+    }
+
+    initPanel(id) {
+        let controller = this.panelControllers?.get(id);
+        if (!controller || controller.initialized) return;
+        controller.instance.init(this.config);
+        controller.initialized = true;
+    }
+
+    async refreshAccount(account) {
+        if (account.meta?.type === 'Xbox') return await new Microsoft(this.config.client_id).refresh(account);
+        if (account.meta?.type === 'AZauth') return await new AZauth(this.config.online).verify(account);
+        if (account.meta?.type === 'Mojang') {
+            if (account.meta.online == false) return await Mojang.login(account.name);
+            return await Mojang.refresh(account);
+        }
+
+        return { error: true, errorMessage: 'Account Type Not Found' };
+    }
+
+    waitForAccountRefresh(accountID) {
+        if (!accountID) return Promise.resolve();
+        return this.accountRefreshPromises.get(String(accountID)) || Promise.resolve();
+    }
+
+    queueAccountRefresh(account) {
+        let accountID = String(account.ID);
+        if (this.accountRefreshPromises.has(accountID)) return this.accountRefreshPromises.get(accountID);
+
+        let refreshPromise = this.refreshAccountRecord(account).finally(() => {
+            this.accountRefreshPromises.delete(accountID);
+        });
+        this.accountRefreshPromises.set(accountID, refreshPromise);
+        return refreshPromise;
+    }
+
+    async refreshAccountRecord(account) {
+        let configClient = await this.db.readData('configClient');
+
+        try {
+            let refreshAccount = await this.refreshAccount(account);
+
+            if (refreshAccount.error) {
+                await this.db.deleteData('accounts', account.ID);
+                document.getElementById(`${account.ID}`)?.remove();
+
+                if (configClient.account_selected == account.ID) {
+                    configClient = await this.db.readData('configClient');
+                    await this.selectFallbackAccount(configClient);
+                }
+
+                console.error(`[Account] ${account.name}: ${refreshAccount.errorMessage || refreshAccount.message || refreshAccount.error}`);
+                return;
+            }
+
+            refreshAccount.ID = account.ID;
+            await this.db.updateData('accounts', refreshAccount, account.ID);
+            await addAccount(refreshAccount);
+
+            if (configClient.account_selected == account.ID) {
+                await accountSelect(refreshAccount);
+            }
+        } catch (err) {
+            console.error(`[Account] ${account.name}: background refresh failed`, err);
+        }
+    }
+
+    async selectFallbackAccount(configClient) {
+        let accounts = await this.db.readAllData('accounts');
+        let fallbackAccount = accounts.find(account => !account.error);
+
+        if (!fallbackAccount) {
+            configClient.account_selected = null;
+            await this.db.updateData('configClient', configClient);
+            toggleNavbar(false);
+            changePanel('login');
+            return null;
+        }
+
+        configClient.account_selected = fallbackAccount.ID;
+        await this.db.updateData('configClient', configClient);
+        await accountSelect(fallbackAccount);
+        return fallbackAccount;
+    }
+
+    async refreshAccountsInBackground(accounts, selectedID) {
+        let orderedAccounts = [...accounts].sort((a, b) => {
+            if (a.ID == selectedID) return -1;
+            if (b.ID == selectedID) return 1;
+            return 0;
+        });
+
+        for (let account of orderedAccounts) {
+            await this.queueAccountRefresh(account);
         }
     }
 
     async startLauncher() {
         toggleNavbar(false);
-        let accounts = await this.db.readAllData('accounts')
-        let configClient = await this.db.readData('configClient')
-        let account_selected = configClient ? configClient.account_selected : null
-        let popupRefresh = new popup();
+        let [accounts, configClient] = await Promise.all([
+            this.db.readAllData('accounts'),
+            this.db.readData('configClient')
+        ]);
 
-        if (accounts?.length) {
-            for (let account of accounts) {
-                let account_ID = account.ID
-                if (account.error) {
-                    await this.db.deleteData('accounts', account_ID)
-                    continue
-                }
-                if (account.meta.type === 'Xbox') {
-                    console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
-                    popupRefresh.openPopup({
-                        title: 'Connexion',
-                        content: `Refresh account Type: ${account.meta.type} | Username: ${account.name}`,
-                        color: 'var(--color)',
-                        background: false
-                    });
-
-                    let refresh_accounts = await new Microsoft(this.config.client_id).refresh(account);
-
-                    if (refresh_accounts.error) {
-                        await this.db.deleteData('accounts', account_ID)
-                        if (account_ID == account_selected) {
-                            configClient.account_selected = null
-                            await this.db.updateData('configClient', configClient)
-                        }
-                        console.error(`[Account] ${account.name}: ${refresh_accounts.errorMessage}`);
-                        continue;
-                    }
-
-                    refresh_accounts.ID = account_ID
-                    await this.db.updateData('accounts', refresh_accounts, account_ID)
-                    await addAccount(refresh_accounts)
-                    if (account_ID == account_selected) accountSelect(refresh_accounts)
-                } else if (account.meta.type == 'AZauth') {
-                    console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
-                    popupRefresh.openPopup({
-                        title: 'Connexion',
-                        content: `Refresh account Type: ${account.meta.type} | Username: ${account.name}`,
-                        color: 'var(--color)',
-                        background: false
-                    });
-                    let refresh_accounts = await new AZauth(this.config.online).verify(account);
-
-                    if (refresh_accounts.error) {
-                        this.db.deleteData('accounts', account_ID)
-                        if (account_ID == account_selected) {
-                            configClient.account_selected = null
-                            this.db.updateData('configClient', configClient)
-                        }
-                        console.error(`[Account] ${account.name}: ${refresh_accounts.message}`);
-                        continue;
-                    }
-
-                    refresh_accounts.ID = account_ID
-                    this.db.updateData('accounts', refresh_accounts, account_ID)
-                    await addAccount(refresh_accounts)
-                    if (account_ID == account_selected) accountSelect(refresh_accounts)
-                } else if (account.meta.type == 'Mojang') {
-                    console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
-                    popupRefresh.openPopup({
-                        title: 'Connexion',
-                        content: `Refresh account Type: ${account.meta.type} | Username: ${account.name}`,
-                        color: 'var(--color)',
-                        background: false
-                    });
-                    if (account.meta.online == false) {
-                        let refresh_accounts = await Mojang.login(account.name);
-
-                        refresh_accounts.ID = account_ID
-                        await addAccount(refresh_accounts)
-                        this.db.updateData('accounts', refresh_accounts, account_ID)
-                        if (account_ID == account_selected) accountSelect(refresh_accounts)
-                        continue;
-                    }
-
-                    let refresh_accounts = await Mojang.refresh(account);
-
-                    if (refresh_accounts.error) {
-                        this.db.deleteData('accounts', account_ID)
-                        if (account_ID == account_selected) {
-                            configClient.account_selected = null
-                            this.db.updateData('configClient', configClient)
-                        }
-                        console.error(`[Account] ${account.name}: ${refresh_accounts.errorMessage}`);
-                        continue;
-                    }
-
-                    refresh_accounts.ID = account_ID
-                    this.db.updateData('accounts', refresh_accounts, account_ID)
-                    await addAccount(refresh_accounts)
-                    if (account_ID == account_selected) accountSelect(refresh_accounts)
-                } else {
-                    console.error(`[Account] ${account.name}: Account Type Not Found`);
-                    this.db.deleteData('accounts', account_ID)
-                    if (account_ID == account_selected) {
-                        configClient.account_selected = null
-                        this.db.updateData('configClient', configClient)
-                    }
-                }
-            }
-
-            accounts = await this.db.readAllData('accounts')
-            configClient = await this.db.readData('configClient')
-            account_selected = configClient ? configClient.account_selected : null
-
-            if (!account_selected) {
-                let uuid = accounts[0].ID
-                if (uuid) {
-                    configClient.account_selected = uuid
-                    await this.db.updateData('configClient', configClient)
-                    accountSelect(uuid)
-                }
-            }
-
-            if (!accounts.length) {
-                config.account_selected = null
-                await this.db.updateData('configClient', config);
-                popupRefresh.closePopup()
-                toggleNavbar(false);
-                return changePanel("login");
-            }
-
-            popupRefresh.closePopup()
-            toggleNavbar(true);
-            changePanel("home");
-        } else {
-            popupRefresh.closePopup()
-            toggleNavbar(false);
-            changePanel('login');
+        let validAccounts = (accounts || []).filter(account => !account.error);
+        for (let account of (accounts || []).filter(account => account.error)) {
+            await this.db.deleteData('accounts', account.ID);
         }
+
+        if (!validAccounts.length) {
+            if (configClient?.account_selected) {
+                configClient.account_selected = null;
+                await this.db.updateData('configClient', configClient);
+            }
+            toggleNavbar(false);
+            return changePanel('login');
+        }
+
+        for (let account of validAccounts) {
+            await addAccount(account);
+        }
+
+        let accountSelected = configClient?.account_selected;
+        let selectedAccount = validAccounts.find(account => account.ID == accountSelected);
+
+        if (!selectedAccount) {
+            selectedAccount = validAccounts[0];
+            configClient.account_selected = selectedAccount.ID;
+            accountSelected = selectedAccount.ID;
+            await this.db.updateData('configClient', configClient);
+        }
+
+        await accountSelect(selectedAccount);
+        toggleNavbar(true);
+        changePanel('home');
+
+        this.refreshAccountsInBackground(validAccounts, accountSelected).catch(err => {
+            console.error('Background account refresh failed:', err);
+        });
     }
 }
 

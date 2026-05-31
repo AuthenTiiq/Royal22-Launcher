@@ -9,6 +9,103 @@ const { Launch } = require('minecraft-java-core')
 const { shell, ipcRenderer } = require('electron')
 const { spawn } = require('child_process')
 
+const htmlEntities = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+};
+
+const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => htmlEntities[char]);
+
+const allowedHTMLTags = new Set([
+    'A', 'ABBR', 'B', 'BLOCKQUOTE', 'BR', 'CODE', 'DEL', 'DIV', 'EM', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'HR', 'I',
+    'IMG', 'LI', 'OL', 'P', 'PRE', 'S', 'SPAN', 'STRONG', 'SUB', 'SUP', 'TABLE', 'TBODY', 'TD', 'TH', 'THEAD', 'TR', 'U', 'UL'
+]);
+
+const blockedHTMLTags = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'FORM', 'INPUT', 'BUTTON', 'META', 'LINK']);
+const globalHTMLAttributes = new Set(['class', 'title']);
+const tagHTMLAttributes = {
+    A: new Set(['href', 'target', 'rel']),
+    IMG: new Set(['src', 'alt', 'title', 'width', 'height']),
+    TD: new Set(['colspan', 'rowspan']),
+    TH: new Set(['colspan', 'rowspan'])
+};
+
+const isSafeURL = (value, protocols = ['http:', 'https:', 'mailto:']) => {
+    try {
+        let url = new URL(value, window.location.href);
+        return protocols.includes(url.protocol);
+    } catch {
+        return false;
+    }
+};
+
+const sanitizeAttributes = element => {
+    for (let attribute of [...element.attributes]) {
+        let name = attribute.name.toLowerCase();
+        let tagName = element.tagName;
+        let allowedForTag = tagHTMLAttributes[tagName]?.has(name) || false;
+        let allowedGlobally = globalHTMLAttributes.has(name);
+
+        if (name.startsWith('on') || name === 'style' || name === 'srcdoc' || (!allowedForTag && !allowedGlobally)) {
+            element.removeAttribute(attribute.name);
+            continue;
+        }
+
+        if (name === 'href' && !isSafeURL(attribute.value)) element.removeAttribute(attribute.name);
+        if (name === 'src' && !isSafeURL(attribute.value, ['http:', 'https:'])) element.removeAttribute(attribute.name);
+    }
+
+    if (element.tagName === 'A' && element.hasAttribute('href')) {
+        element.setAttribute('target', '_blank');
+        element.setAttribute('rel', 'noopener noreferrer');
+    }
+};
+
+const sanitizeNode = node => {
+    if (node.nodeType === Node.TEXT_NODE) return;
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+        node.remove();
+        return;
+    }
+
+    if (blockedHTMLTags.has(node.tagName)) {
+        node.remove();
+        return;
+    }
+
+    for (let child of [...node.childNodes]) sanitizeNode(child);
+
+    if (!allowedHTMLTags.has(node.tagName)) {
+        node.replaceWith(...node.childNodes);
+        return;
+    }
+
+    sanitizeAttributes(node);
+};
+
+const sanitizeNewsHTML = value => {
+    let template = document.createElement('template');
+    template.innerHTML = String(value ?? '').replace(/\n/g, '<br>');
+    for (let child of [...template.content.childNodes]) sanitizeNode(child);
+    return template.innerHTML;
+};
+
+const getPlainTextFromHTML = value => {
+    let template = document.createElement('template');
+    template.innerHTML = String(value ?? '');
+    return template.content.textContent || '';
+};
+
+const getNewsPreview = (value, maxLength = 150) => {
+    let text = getPlainTextFromHTML(value).replace(/\s+/g, ' ').trim();
+    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+};
+
+const INSTANCE_LIST_MAX_AGE = 60000;
+
 class Home {
     static id = "home";
     async init(config) {
@@ -30,6 +127,8 @@ class Home {
 
     async news() {
         let newsElement = document.querySelector('.news-list');
+        if (!newsElement) return;
+
         let news = await config.getNews().then(res => res).catch(err => false);
         if (news) {
             if (!news.length) {
@@ -53,75 +152,76 @@ class Home {
                     </div>`
                 newsElement.appendChild(blockNews);
             } else {
+                let newsPopup = document.querySelector('.news-popup');
+                if (newsPopup && newsPopup.parentElement !== document.body) {
+                    document.body.appendChild(newsPopup);
+                }
+
+                let popupTitle = document.querySelector('.news-popup-title');
+                let popupDate = document.querySelector('.news-popup-date');
+                let popupAuthor = document.querySelector('.news-popup-author');
+                let popupBody = document.querySelector('.news-popup-body');
+
                 for (let News of news) {
                     let date = this.getdate(News.publish_date)
+                    let dateLabel = `${date.day} ${date.month}`;
+                    let title = News.title ?? '';
+                    let author = News.author ?? '';
+                    let content = News.content ?? '';
+                    let plainContent = getPlainTextFromHTML(content).trim();
+                    let hasLongContent = plainContent.length > 150;
+                    let preview = hasLongContent ? getNewsPreview(content) : content;
                     let blockNews = document.createElement('div');
                     blockNews.className = 'news-block';
-
-                    let contentHtml = '';
-                    if (News.content.length > 150) {
-                        contentHtml = `<p>${News.content.replace(/\n/g, '</br>').substring(0, 150) + '...'}</p>
-                                       <div class="read-more-btn" data-title="${News.title.replace(/"/g, '&quot;')}" data-author="${News.author.replace(/"/g, '&quot;')}" data-date="${date.day} ${date.month}" data-content="${News.content.replace(/"/g, '&quot;').replace(/\n/g, '</br>')}">Afficher plus</div>`;
-                    } else {
-                        contentHtml = `<p>${News.content.replace(/\n/g, '</br>')}</p>`;
-                    }
+                    let readMoreHtml = hasLongContent ? '<div class="read-more-btn">Afficher plus</div>' : '';
+                    let contentHtml = hasLongContent ? `<p>${escapeHTML(preview)}</p>` : sanitizeNewsHTML(preview);
 
                     blockNews.innerHTML = `
                         <div class="news-header">
                             <img src="assets/images/icon.png">
                             <div class="header-text">
-                                <div class="title">${News.title}</div>
-                                <div class="date-small" style="font-size:0.8rem; opacity:0.7;">${date.day} ${date.month}</div>
+                                <div class="title">${escapeHTML(title)}</div>
+                                <div class="date-small" style="font-size:0.8rem; opacity:0.7;">${escapeHTML(dateLabel)}</div>
                             </div>
                         </div>
                         <div class="news-content">
                             <div class="bbWrapper">
                                 ${contentHtml}
-                                <p class="news-author">Publié par <span>${News.author}</span></p>
+                                ${readMoreHtml}
+                                <p class="news-author">Publié par <span>${escapeHTML(author)}</span></p>
                             </div>
                         </div>`
                     newsElement.appendChild(blockNews);
-                }
 
-                // Add popup logic
-                setTimeout(() => {
-                    let readMoreBtns = document.querySelectorAll('.read-more-btn');
-                    let newsPopup = document.querySelector('.news-popup');
-                    if (newsPopup) {
-                        // Move the popup to the body so it escapes the stacking context of `.panels`
-                        if (newsPopup.parentElement !== document.body) {
-                            document.body.appendChild(newsPopup);
-                        }
-
-                        let popupTitle = document.querySelector('.news-popup-title');
-                        let popupDate = document.querySelector('.news-popup-date');
-                        let popupAuthor = document.querySelector('.news-popup-author');
-                        let popupBody = document.querySelector('.news-popup-body');
-
-                        readMoreBtns.forEach(btn => {
-                            btn.addEventListener('click', () => {
-                                popupTitle.innerHTML = btn.getAttribute('data-title');
-                                popupAuthor.innerHTML = `Publié par <span>${btn.getAttribute('data-author')}</span>`;
-                                popupDate.innerHTML = btn.getAttribute('data-date');
-                                popupBody.innerHTML = btn.getAttribute('data-content');
-                                newsPopup.classList.add('active');
-                            });
-                        });
-
-                        let closeBtn = document.querySelector('.close-news-popup');
-                        if (closeBtn) {
-                            closeBtn.addEventListener('click', () => {
-                                newsPopup.classList.remove('active');
-                            });
-                        }
-
-                        window.addEventListener('click', (e) => {
-                            if (e.target === newsPopup) {
-                                newsPopup.classList.remove('active');
-                            }
+                    let readMoreBtn = blockNews.querySelector('.read-more-btn');
+                    if (readMoreBtn && newsPopup && popupTitle && popupDate && popupAuthor && popupBody) {
+                        this.eventManager.add(readMoreBtn, 'click', () => {
+                            popupTitle.textContent = title;
+                            popupDate.textContent = dateLabel;
+                            popupAuthor.textContent = 'Publié par ';
+                            let authorSpan = document.createElement('span');
+                            authorSpan.textContent = author;
+                            popupAuthor.appendChild(authorSpan);
+                            popupBody.innerHTML = sanitizeNewsHTML(content);
+                            newsPopup.classList.add('active');
                         });
                     }
-                }, 100);
+                }
+
+                if (newsPopup) {
+                    let closeBtn = document.querySelector('.close-news-popup');
+                    if (closeBtn) {
+                        this.eventManager.add(closeBtn, 'click', () => {
+                            newsPopup.classList.remove('active');
+                        });
+                    }
+
+                    this.eventManager.add(window, 'click', e => {
+                        if (e.target === newsPopup) {
+                            newsPopup.classList.remove('active');
+                        }
+                    });
+                }
             }
         } else {
             let blockNews = document.createElement('div');
@@ -157,11 +257,6 @@ class Home {
     }
 
     async instancesSelect() {
-        let configClient = await this.db.readData('configClient')
-        let auth = await this.db.readData('accounts', configClient.account_selected)
-        let instancesList = await config.getInstanceList()
-        let instanceSelect = instancesList.find(i => i.id == configClient?.instance_selct) ? configClient?.instance_selct : null
-
         let instanceBTN = document.querySelector('.play-btn')
         let instancePopup = document.querySelector('.instance-popup')
         if (instancePopup && instancePopup.parentElement !== document.body) {
@@ -169,8 +264,30 @@ class Home {
         }
         let instancesListPopup = document.querySelector('.instances-List')
         let instanceCloseBTN = document.querySelector('.close-popup')
-
         let instanceSelectBtn = document.querySelector('.instance-select')
+
+        this.eventManager.add(instanceBTN, 'click', async e => {
+            this.startGame();
+        })
+
+        this.eventManager.add(instanceCloseBTN, 'click', () => {
+            instancePopup.classList.remove('active');
+            setTimeout(() => instancePopup.style.display = 'none', 300);
+        })
+
+        let configClient = await this.db.readData('configClient')
+        let auth = await this.db.readData('accounts', configClient.account_selected)
+        let instancesList
+
+        try {
+            instancesList = await this.refreshInstancesList()
+        } catch (err) {
+            console.error('Impossible de charger la liste distante des instances:', err)
+            if (instanceSelectBtn) instanceSelectBtn.style.display = 'none'
+            return
+        }
+
+        let instanceSelect = instancesList.find(i => i.id == configClient?.instance_selct) ? configClient?.instance_selct : null
 
         if (instancesList.length > 1) {
             if (instanceSelectBtn) {
@@ -213,23 +330,42 @@ class Home {
                 ? instance.description.replace(/u([0-9a-fA-F]{4})/g, (m, hex) => String.fromCharCode(parseInt(hex, 16)))
                 : null;
 
-            let descriptionHTML = cleanDesc
-                ? `<div class="detail-description">${cleanDesc}</div>`
-                : `<div class="detail-description" style="font-style: italic; opacity: 0.5;">Aucune description disponible pour cette instance.</div>`;
+            detailsContainer.replaceChildren();
 
-            detailsContainer.innerHTML = `
-                <div class="detail-header">
-                    <div class="detail-title">${instance.name || instance.id}</div>
-                    <div class="detail-status ${statusClass}">${statusText}</div>
-                </div>
-                ${descriptionHTML}
-                <div class="detail-actions">
-                    <button class="btn-select-instance" id="select-btn-${instance.id}">Sélectionner</button>
-                </div>
-            `;
+            let detailHeader = document.createElement('div');
+            detailHeader.classList.add('detail-header');
+
+            let detailTitle = document.createElement('div');
+            detailTitle.classList.add('detail-title');
+            detailTitle.textContent = instance.name || instance.id;
+
+            let detailStatus = document.createElement('div');
+            detailStatus.classList.add('detail-status', statusClass);
+            detailStatus.textContent = statusText;
+
+            let descriptionElement = document.createElement('div');
+            descriptionElement.classList.add('detail-description');
+            if (cleanDesc) {
+                descriptionElement.innerHTML = sanitizeNewsHTML(cleanDesc);
+            } else {
+                descriptionElement.style.fontStyle = 'italic';
+                descriptionElement.style.opacity = '0.5';
+                descriptionElement.textContent = 'Aucune description disponible pour cette instance.';
+            }
+
+            let detailActions = document.createElement('div');
+            detailActions.classList.add('detail-actions');
+
+            let selectBtn = document.createElement('button');
+            selectBtn.classList.add('btn-select-instance');
+            selectBtn.type = 'button';
+            selectBtn.textContent = 'Sélectionner';
+
+            detailHeader.append(detailTitle, detailStatus);
+            detailActions.appendChild(selectBtn);
+            detailsContainer.append(detailHeader, descriptionElement, detailActions);
 
             // Add click event for the "Sélectionner" button
-            let selectBtn = document.getElementById(`select-btn-${instance.id}`);
             if (selectBtn) {
                 // Must register event manually because eventManager might clear it, or we can use eventManager but with care 
                 // since this DOM node gets destroyed. Better to handle it directly on the document or re-bind.
@@ -267,14 +403,17 @@ class Home {
                 let DOM = document.createElement('div')
                 DOM.classList.add('instance-elements')
                 DOM.id = instance.id
+                DOM.dataset.instanceId = instance.id
                 if (instance.id == instanceSelect) {
                     DOM.classList.add('active-instance')
                     // Pre-render the active instance details right away
                     renderDetails(instance.id)
                 }
-                DOM.innerHTML = `
-                <div class="instance-elements-name" style="pointer-events: none;">${instance.name || instance.id}</div>
-                `
+                let instanceName = document.createElement('div')
+                instanceName.classList.add('instance-elements-name')
+                instanceName.style.pointerEvents = 'none'
+                instanceName.textContent = instance.name || instance.id
+                DOM.appendChild(instanceName)
                 instancesListPopup.appendChild(DOM)
             }
             if (instance.id == instanceSelect) setStatus(instance.status)
@@ -283,39 +422,127 @@ class Home {
         this.eventManager.add(instancePopup, 'click', async e => {
             let target = e.target.closest('.instance-elements');
             if (target) {
-                let newInstanceSelect = target.id
+                let newInstanceSelect = target.dataset.instanceId
                 let activeInstanceSelect = document.querySelector('.active-instance')
 
                 if (activeInstanceSelect) activeInstanceSelect.classList.remove('active-instance');
-                e.target.classList.add('active-instance');
+                target.classList.add('active-instance');
 
                 // Render detail pane (do NOT save to config or close popup yet)
                 renderDetails(newInstanceSelect);
             }
         })
 
-        this.eventManager.add(instanceBTN, 'click', async e => {
-            // Only one instance exists, just start the game
-            this.startGame();
+    }
+
+    async refreshInstancesList() {
+        if (this.instancesListPromise) return await this.instancesListPromise
+
+        this.instancesListPromise = config.getInstanceList().then(instancesList => {
+            this.instancesList = instancesList
+            this.instancesListFetchedAt = Date.now()
+            return instancesList
+        }).finally(() => {
+            this.instancesListPromise = null
         })
 
-        this.eventManager.add(instanceCloseBTN, 'click', () => {
-            instancePopup.classList.remove('active');
-            setTimeout(() => instancePopup.style.display = 'none', 300);
-        })
+        return await this.instancesListPromise
+    }
+
+    async getLaunchInstances() {
+        let hasCachedInstances = Array.isArray(this.instancesList) && this.instancesList.length > 0
+        let cacheAge = Date.now() - (this.instancesListFetchedAt || 0)
+
+        if (hasCachedInstances && cacheAge < INSTANCE_LIST_MAX_AGE) return this.instancesList
+        return await this.refreshInstancesList()
     }
 
     async startGame() {
-        let launch = new Launch()
         let configClient = await this.db.readData('configClient')
-        let instance = await config.getInstanceList()
+        await window.launcherAccountRefresh?.waitFor(configClient.account_selected)
+        configClient = await this.db.readData('configClient')
         let authenticator = await this.db.readData('accounts', configClient.account_selected)
+        let instance
+
+        if (!authenticator) {
+            new popup().openPopup({
+                title: 'Erreur',
+                content: 'Le compte sélectionné est introuvable ou doit être reconnecté.',
+                color: 'red',
+                options: true
+            })
+            return
+        }
+
+        try {
+            instance = await this.getLaunchInstances()
+        } catch (err) {
+            console.error('Impossible de vérifier la configuration distante de l\'instance:', err)
+            new popup().openPopup({
+                title: 'Erreur',
+                content: "Impossible de vérifier la configuration distante de l'instance.",
+                color: 'red',
+                options: true
+            })
+            return
+        }
+
         let options = instance.find(i => i.id == configClient.instance_selct)
 
+        if (!options) {
+            try {
+                instance = await this.refreshInstancesList()
+            } catch (err) {
+                console.error('Impossible de vérifier la configuration distante de l\'instance:', err)
+                new popup().openPopup({
+                    title: 'Erreur',
+                    content: "Impossible de vérifier la configuration distante de l'instance.",
+                    color: 'red',
+                    options: true
+                })
+                return
+            }
+
+            options = instance.find(i => i.id == configClient.instance_selct)
+        }
+
+        if (!options) {
+            new popup().openPopup({
+                title: 'Erreur',
+                content: "L'instance sélectionnée est introuvable.",
+                color: 'red',
+                options: true
+            })
+            return
+        }
+
+        let launch = new Launch()
         let playInstanceBTN = document.querySelector('.play-instance')
         let infoStartingBOX = document.querySelector('.info-starting-game')
         let infoStarting = document.querySelector(".info-starting-game-text")
         let progressBar = document.querySelector('.progress-bar')
+        let lastProgressUpdate = 0;
+        let lastProgressLabel = '';
+        let lastProgressPercent = -1;
+
+        const updateLaunchProgress = (label, progress, size) => {
+            let now = Date.now();
+            let percent = size > 0 ? Math.min(100, Math.floor((progress / size) * 100)) : 0;
+            let labelChanged = lastProgressLabel !== label;
+            let percentChanged = lastProgressPercent !== percent;
+
+            if (!labelChanged && !percentChanged && now - lastProgressUpdate < 120) return;
+            if (!labelChanged && now - lastProgressUpdate < 120 && progress < size) return;
+
+            infoStarting.textContent = `${label} ${percent}%`;
+            ipcRenderer.send('main-window-progress', { progress, size });
+            progressBar.value = progress;
+            progressBar.max = size;
+
+            lastProgressUpdate = now;
+            lastProgressLabel = label;
+            lastProgressPercent = percent;
+        };
 
         let opt = {
             url: options.url,
@@ -364,8 +591,6 @@ class Home {
             }
         }
 
-        launch.Launch(opt);
-
         playInstanceBTN.classList.add('hidden');
         setTimeout(() => {
             infoStartingBOX.style.display = "flex";
@@ -383,17 +608,11 @@ class Home {
         });
 
         launch.on('progress', (progress, size) => {
-            infoStarting.innerHTML = `Téléchargement ${((progress / size) * 100).toFixed(0)}%`
-            ipcRenderer.send('main-window-progress', { progress, size })
-            progressBar.value = progress;
-            progressBar.max = size;
+            updateLaunchProgress('Téléchargement', progress, size);
         });
 
         launch.on('check', (progress, size) => {
-            infoStarting.innerHTML = `Vérification ${((progress / size) * 100).toFixed(0)}%`
-            ipcRenderer.send('main-window-progress', { progress, size })
-            progressBar.value = progress;
-            progressBar.max = size;
+            updateLaunchProgress('Vérification', progress, size);
         });
 
         launch.on('estimated', (time) => {
@@ -410,7 +629,7 @@ class Home {
         launch.on('patch', patch => {
             console.log(patch);
             ipcRenderer.send('main-window-progress-load')
-            infoStarting.innerHTML = `Patch en cours...`
+            infoStarting.textContent = `Patch en cours...`
         });
 
         launch.on('data', (e) => {
@@ -420,7 +639,7 @@ class Home {
             };
             new logger('Minecraft', '#36b030');
             ipcRenderer.send('main-window-progress-load')
-            infoStarting.innerHTML = `Demarrage en cours...`
+            infoStarting.textContent = `Demarrage en cours...`
             console.log(e);
         })
 
@@ -429,7 +648,6 @@ class Home {
                 ipcRenderer.send("main-window-show")
             };
             ipcRenderer.send('main-window-progress-reset')
-            ipcRenderer.send('main-window-progress-reset')
 
             infoStartingBOX.classList.remove('visible');
             setTimeout(() => {
@@ -437,7 +655,7 @@ class Home {
                 playInstanceBTN.classList.remove('hidden');
             }, 300);
 
-            infoStarting.innerHTML = `Vérification`
+            infoStarting.textContent = `Vérification`
             new logger(pkg.name, '#7289da');
             console.log('Close');
         });
@@ -463,10 +681,12 @@ class Home {
                 playInstanceBTN.classList.remove('hidden');
             }, 300);
 
-            infoStarting.innerHTML = `Vérification`
+            infoStarting.textContent = `Vérification`
             new logger(pkg.name, '#7289da');
             console.log(err);
         });
+
+        launch.Launch(opt);
     }
 
     getdate(e) {

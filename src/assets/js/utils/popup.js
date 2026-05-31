@@ -5,6 +5,59 @@
 
 const { ipcRenderer } = require('electron');
 
+const allowedPopupTags = new Set(['A', 'B', 'BR', 'CODE', 'DIV', 'EM', 'I', 'P', 'SPAN', 'STRONG', 'U']);
+const allowedPopupAttributes = {
+    A: new Set(['href', 'target', 'rel'])
+};
+
+const isSafeURL = value => {
+    try {
+        let url = new URL(value, window.location.href);
+        return ['http:', 'https:', 'mailto:'].includes(url.protocol);
+    } catch {
+        return false;
+    }
+};
+
+const sanitizePopupNode = node => {
+    if (node.nodeType === Node.TEXT_NODE) return;
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+        node.remove();
+        return;
+    }
+
+    for (let child of [...node.childNodes]) sanitizePopupNode(child);
+
+    if (!allowedPopupTags.has(node.tagName)) {
+        node.replaceWith(...node.childNodes);
+        return;
+    }
+
+    for (let attribute of [...node.attributes]) {
+        let name = attribute.name.toLowerCase();
+        let allowed = allowedPopupAttributes[node.tagName]?.has(name) || false;
+
+        if (name.startsWith('on') || name === 'style' || !allowed) {
+            node.removeAttribute(attribute.name);
+            continue;
+        }
+
+        if (name === 'href' && !isSafeURL(attribute.value)) node.removeAttribute(attribute.name);
+    }
+
+    if (node.tagName === 'A' && node.hasAttribute('href')) {
+        node.setAttribute('target', '_blank');
+        node.setAttribute('rel', 'noopener noreferrer');
+    }
+};
+
+const sanitizePopupHTML = value => {
+    let template = document.createElement('template');
+    template.innerHTML = String(value ?? '');
+    for (let child of [...template.content.childNodes]) sanitizePopupNode(child);
+    return template.innerHTML;
+};
+
 export default class popup {
     constructor() {
         this.popup = document.querySelector('.popup');
@@ -21,9 +74,9 @@ export default class popup {
         if (info.background === false) this.popup.style.background = 'none';
         else this.popup.style.background = '';
 
-        this.popupTitle.innerHTML = info.title;
+        this.popupTitle.textContent = info.title ?? '';
         this.popupContent.style.color = info.color ? info.color : '#e21212';
-        this.popupContent.innerHTML = info.content;
+        this.popupContent.innerHTML = sanitizePopupHTML(info.content);
 
         if (info.onClose) this.onClose = info.onClose;
 
@@ -47,7 +100,7 @@ export default class popup {
         // Wait for transition to finish
         setTimeout(() => {
             this.popup.style.display = 'none';
-            this.popupTitle.innerHTML = '';
+            this.popupTitle.textContent = '';
             this.popupContent.innerHTML = '';
             this.popupOptions.style.display = 'none';
             if (this.onClose) {
