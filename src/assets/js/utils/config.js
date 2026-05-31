@@ -7,14 +7,24 @@ const pkg = require('../package.json');
 const nodeFetch = require("node-fetch");
 const convert = require('xml-js');
 let url = pkg.user ? `${pkg.url}/${pkg.user}` : pkg.url
+const FETCH_TIMEOUT = 10000;
 
 let config = `${url}/launcher/config-launcher/config.json`;
 let news = `${url}/launcher/news-launcher/news.json`;
 
+function fetchWithTimeout(url, options = {}) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+    return nodeFetch(url, { ...options, signal: controller.signal }).finally(() => {
+        clearTimeout(timeout);
+    });
+}
+
 class Config {
     GetConfig() {
         return new Promise((resolve, reject) => {
-            nodeFetch(config).then(async config => {
+            fetchWithTimeout(config).then(async config => {
                 if (config.status === 200) return resolve(config.json());
                 else return reject({ error: { code: config.statusText, message: 'server not accessible' } });
             }).catch(error => {
@@ -25,7 +35,10 @@ class Config {
 
     async getInstanceList() {
         let urlInstance = `${url}/files`
-        let instances = await nodeFetch(urlInstance).then(res => res.json()).catch(err => err)
+        let response = await fetchWithTimeout(urlInstance)
+        if (!response.ok) throw new Error(`server not accessible: ${response.statusText}`)
+
+        let instances = await response.json()
         let instancesList = []
         instances = Object.entries(instances)
 
@@ -42,7 +55,7 @@ class Config {
 
         if (config.rss) {
             return new Promise((resolve, reject) => {
-                nodeFetch(config.rss).then(async config => {
+                fetchWithTimeout(config.rss).then(async config => {
                     if (config.status === 200) {
                         let news = [];
                         let response = await config.text()
@@ -64,7 +77,7 @@ class Config {
             })
         } else {
             return new Promise((resolve, reject) => {
-                nodeFetch(news).then(async config => {
+                fetchWithTimeout(news).then(async config => {
                     if (config.status === 200) return resolve(config.json());
                     else return reject({ error: { code: config.statusText, message: 'server not accessible' } });
                 }).catch(error => {

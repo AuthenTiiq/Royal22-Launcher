@@ -19,6 +19,10 @@ const fs = require('fs');
 class Launcher {
     async init() {
         this.eventManager = new EventManager();
+        this.accountRefreshPromises = new Map();
+        window.launcherAccountRefresh = {
+            waitFor: accountID => this.waitForAccountRefresh(accountID)
+        };
         this.initLog();
         console.log('Initializing Launcher...');
         this.shortcut()
@@ -250,6 +254,53 @@ class Launcher {
         return { error: true, errorMessage: 'Account Type Not Found' };
     }
 
+    waitForAccountRefresh(accountID) {
+        if (!accountID) return Promise.resolve();
+        return this.accountRefreshPromises.get(String(accountID)) || Promise.resolve();
+    }
+
+    queueAccountRefresh(account) {
+        let accountID = String(account.ID);
+        if (this.accountRefreshPromises.has(accountID)) return this.accountRefreshPromises.get(accountID);
+
+        let refreshPromise = this.refreshAccountRecord(account).finally(() => {
+            this.accountRefreshPromises.delete(accountID);
+        });
+        this.accountRefreshPromises.set(accountID, refreshPromise);
+        return refreshPromise;
+    }
+
+    async refreshAccountRecord(account) {
+        let configClient = await this.db.readData('configClient');
+
+        try {
+            let refreshAccount = await this.refreshAccount(account);
+
+            if (refreshAccount.error) {
+                await this.db.deleteData('accounts', account.ID);
+                document.getElementById(`${account.ID}`)?.remove();
+
+                if (configClient.account_selected == account.ID) {
+                    configClient = await this.db.readData('configClient');
+                    await this.selectFallbackAccount(configClient);
+                }
+
+                console.error(`[Account] ${account.name}: ${refreshAccount.errorMessage || refreshAccount.message || refreshAccount.error}`);
+                return;
+            }
+
+            refreshAccount.ID = account.ID;
+            await this.db.updateData('accounts', refreshAccount, account.ID);
+            await addAccount(refreshAccount);
+
+            if (configClient.account_selected == account.ID) {
+                await accountSelect(refreshAccount);
+            }
+        } catch (err) {
+            console.error(`[Account] ${account.name}: background refresh failed`, err);
+        }
+    }
+
     async selectFallbackAccount(configClient) {
         let accounts = await this.db.readAllData('accounts');
         let fallbackAccount = accounts.find(account => !account.error);
@@ -269,7 +320,6 @@ class Launcher {
     }
 
     async refreshAccountsInBackground(accounts, selectedID) {
-        let configClient = await this.db.readData('configClient');
         let orderedAccounts = [...accounts].sort((a, b) => {
             if (a.ID == selectedID) return -1;
             if (b.ID == selectedID) return 1;
@@ -277,32 +327,7 @@ class Launcher {
         });
 
         for (let account of orderedAccounts) {
-            try {
-                let refreshAccount = await this.refreshAccount(account);
-
-                if (refreshAccount.error) {
-                    await this.db.deleteData('accounts', account.ID);
-                    document.getElementById(`${account.ID}`)?.remove();
-
-                    if (configClient.account_selected == account.ID) {
-                        configClient = await this.db.readData('configClient');
-                        await this.selectFallbackAccount(configClient);
-                    }
-
-                    console.error(`[Account] ${account.name}: ${refreshAccount.errorMessage || refreshAccount.message || refreshAccount.error}`);
-                    continue;
-                }
-
-                refreshAccount.ID = account.ID;
-                await this.db.updateData('accounts', refreshAccount, account.ID);
-                await addAccount(refreshAccount);
-
-                if (configClient.account_selected == account.ID) {
-                    await accountSelect(refreshAccount);
-                }
-            } catch (err) {
-                console.error(`[Account] ${account.name}: background refresh failed`, err);
-            }
+            await this.queueAccountRefresh(account);
         }
     }
 

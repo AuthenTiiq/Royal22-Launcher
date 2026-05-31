@@ -257,11 +257,6 @@ class Home {
     }
 
     async instancesSelect() {
-        let configClient = await this.db.readData('configClient')
-        let auth = await this.db.readData('accounts', configClient.account_selected)
-        let instancesList = await this.refreshInstancesList()
-        let instanceSelect = instancesList.find(i => i.id == configClient?.instance_selct) ? configClient?.instance_selct : null
-
         let instanceBTN = document.querySelector('.play-btn')
         let instancePopup = document.querySelector('.instance-popup')
         if (instancePopup && instancePopup.parentElement !== document.body) {
@@ -269,8 +264,30 @@ class Home {
         }
         let instancesListPopup = document.querySelector('.instances-List')
         let instanceCloseBTN = document.querySelector('.close-popup')
-
         let instanceSelectBtn = document.querySelector('.instance-select')
+
+        this.eventManager.add(instanceBTN, 'click', async e => {
+            this.startGame();
+        })
+
+        this.eventManager.add(instanceCloseBTN, 'click', () => {
+            instancePopup.classList.remove('active');
+            setTimeout(() => instancePopup.style.display = 'none', 300);
+        })
+
+        let configClient = await this.db.readData('configClient')
+        let auth = await this.db.readData('accounts', configClient.account_selected)
+        let instancesList
+
+        try {
+            instancesList = await this.refreshInstancesList()
+        } catch (err) {
+            console.error('Impossible de charger la liste distante des instances:', err)
+            if (instanceSelectBtn) instanceSelectBtn.style.display = 'none'
+            return
+        }
+
+        let instanceSelect = instancesList.find(i => i.id == configClient?.instance_selct) ? configClient?.instance_selct : null
 
         if (instancesList.length > 1) {
             if (instanceSelectBtn) {
@@ -416,22 +433,20 @@ class Home {
             }
         })
 
-        this.eventManager.add(instanceBTN, 'click', async e => {
-            // Only one instance exists, just start the game
-            this.startGame();
-        })
-
-        this.eventManager.add(instanceCloseBTN, 'click', () => {
-            instancePopup.classList.remove('active');
-            setTimeout(() => instancePopup.style.display = 'none', 300);
-        })
     }
 
     async refreshInstancesList() {
-        let instancesList = await config.getInstanceList()
-        this.instancesList = instancesList
-        this.instancesListFetchedAt = Date.now()
-        return instancesList
+        if (this.instancesListPromise) return await this.instancesListPromise
+
+        this.instancesListPromise = config.getInstanceList().then(instancesList => {
+            this.instancesList = instancesList
+            this.instancesListFetchedAt = Date.now()
+            return instancesList
+        }).finally(() => {
+            this.instancesListPromise = null
+        })
+
+        return await this.instancesListPromise
     }
 
     async getLaunchInstances() {
@@ -443,10 +458,21 @@ class Home {
     }
 
     async startGame() {
-        let launch = new Launch()
         let configClient = await this.db.readData('configClient')
+        await window.launcherAccountRefresh?.waitFor(configClient.account_selected)
+        configClient = await this.db.readData('configClient')
         let authenticator = await this.db.readData('accounts', configClient.account_selected)
         let instance
+
+        if (!authenticator) {
+            new popup().openPopup({
+                title: 'Erreur',
+                content: 'Le compte sélectionné est introuvable ou doit être reconnecté.',
+                color: 'red',
+                options: true
+            })
+            return
+        }
 
         try {
             instance = await this.getLaunchInstances()
@@ -490,6 +516,7 @@ class Home {
             return
         }
 
+        let launch = new Launch()
         let playInstanceBTN = document.querySelector('.play-instance')
         let infoStartingBOX = document.querySelector('.info-starting-game')
         let infoStarting = document.querySelector(".info-starting-game-text")
@@ -563,8 +590,6 @@ class Home {
                 opt.JVM_ARGS = parsedArgs.map(arg => arg.replace(/^["'](.*)["']$/, '$1'));
             }
         }
-
-        launch.Launch(opt);
 
         playInstanceBTN.classList.add('hidden');
         setTimeout(() => {
@@ -660,6 +685,8 @@ class Home {
             new logger(pkg.name, '#7289da');
             console.log(err);
         });
+
+        launch.Launch(opt);
     }
 
     getdate(e) {
