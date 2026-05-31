@@ -151,8 +151,9 @@ function openServersStatusWindow() {
             titleBarStyle: 'hidden',
             alwaysOnTop: true,
             webPreferences: {
-                contextIsolation: false,
-                nodeIntegration: true
+                contextIsolation: true,
+                nodeIntegration: false,
+                sandbox: true
             }
         });
 
@@ -162,6 +163,8 @@ function openServersStatusWindow() {
         }
 
         serversStatusWindow.loadURL("https://status.royalcreeps.fr");
+
+        serversStatusWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 
         serversStatusWindow.on('close', () => {
             serversStatusWindow = null;
