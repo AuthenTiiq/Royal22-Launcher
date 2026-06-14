@@ -362,6 +362,7 @@ Depuis le fichier situé dans le dossier web /launcher/config-launcher/config.js
 - game_args : ajouter des arguments personnalisés supplémentaires pour lancer le jeu
 - dataDirectory : `Minecraft`  Cette option permet de définir le répertoire dans lequel votre jeu va se télécharger. Ne pas mettre de point il sera rajouté automatiquement si besoin.
 - ignored : `logs`Cettte option permet de white-list les fichiers qui ne seront pas vérifiés par "vérify".
+- forceVerify : `mods/important.jar` Cette option permet de forcer la vérification d'un fichier ou d'un dossier même s'il est couvert par `ignored`. `forceVerify` est prioritaire sur `ignored`.
 - status : Cette section permet de définir quel serveur sera affiché dans le launcher.
 - nameserver : `Craftlaunch Serveur` Cette option permet de définir le nom de serveur qui sera affiché dans le launcher.
 - ip : `123.546.789` Cette option permet de définir l'adresse IP du serveur qui sera affiché dans le launcher.

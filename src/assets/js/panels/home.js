@@ -104,6 +104,42 @@ const getNewsPreview = (value, maxLength = 150) => {
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
 };
 
+const normalizeVerifyPath = (value) => {
+    let path = String(value ?? '').trim().replace(/\\+/g, '/');
+    if (!path) return '';
+
+    path = path.replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/+$/, '');
+    return path;
+};
+
+const isSameOrParentPath = (candidate, target) => {
+    return candidate === target || target.startsWith(`${candidate}/`);
+};
+
+const shouldForceVerifyPath = (ignoredPath, forcedPath) => {
+    // If one path contains the other, keeping ignored would prevent forced verify.
+    return isSameOrParentPath(ignoredPath, forcedPath) || isSameOrParentPath(forcedPath, ignoredPath);
+};
+
+const buildVerifyRules = (options) => {
+    let ignored = Array.isArray(options?.ignored)
+        ? options.ignored.map(normalizeVerifyPath).filter(Boolean)
+        : [];
+    let forceVerify = Array.isArray(options?.forceVerify)
+        ? options.forceVerify.map(normalizeVerifyPath).filter(Boolean)
+        : [];
+
+    let uniqueForceVerify = [...new Set(forceVerify)];
+    let effectiveIgnored = ignored.filter(ignoredPath => {
+        return !uniqueForceVerify.some(forcedPath => shouldForceVerifyPath(ignoredPath, forcedPath));
+    });
+
+    return {
+        ignored: [...new Set(effectiveIgnored)],
+        forceVerify: uniqueForceVerify
+    };
+};
+
 const INSTANCE_LIST_MAX_AGE = 60000;
 
 class Home {
@@ -164,7 +200,7 @@ class Home {
 
                 for (let News of news) {
                     let date = this.getdate(News.publish_date)
-                    let dateLabel = `${date.day} ${date.month}`;
+                    let dateLabel = `${date.day} ${date.month} ${date.year}`;
                     let title = News.title ?? '';
                     let author = News.author ?? '';
                     let content = News.content ?? '';
@@ -544,6 +580,8 @@ class Home {
             lastProgressPercent = percent;
         };
 
+        let verifyRules = buildVerifyRules(options);
+
         let opt = {
             url: options.url,
             authenticator: authenticator,
@@ -563,7 +601,8 @@ class Home {
 
             verify: options.verify,
 
-            ignored: [...options.ignored],
+            ignored: verifyRules.ignored,
+            forceVerify: verifyRules.forceVerify,
 
             javaPath: configClient?.java_config?.java_path || null,
 
