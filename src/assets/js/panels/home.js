@@ -142,6 +142,50 @@ const buildVerifyRules = (options) => {
 
 const INSTANCE_LIST_MAX_AGE = 60000;
 
+const INSTANCE_TAG_LABELS = {
+    upcoming: 'Prochainement',
+    new: 'Nouveau',
+    unavailable: 'Indisponible'
+};
+
+const normalizeTagToken = (value) => {
+    if (value == null) return '';
+    return String(value)
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+};
+
+const resolveInstanceTag = (instance) => {
+    let rawTag = instance?.tag ?? instance?.launcherTag ?? instance?.badge ?? instance?.displayTag ?? null;
+    let normalized = normalizeTagToken(rawTag);
+
+    if (normalized === 'prochainement' || normalized === 'upcoming' || normalized === 'soon') return 'upcoming';
+    if (normalized === 'nouveau' || normalized === 'new') return 'new';
+    if (normalized === 'indisponible' || normalized === 'unavailable' || normalized === 'disabled') return 'unavailable';
+
+    if (instance?.status === 'maintenance' || instance?.enabled === false || instance?.available === false) {
+        return 'unavailable';
+    }
+
+    return null;
+};
+
+const getMinecraftVersionLabel = (instance) => {
+    let version = instance?.loadder?.minecraft_version || instance?.minecraft_version;
+    return version ? `Minecraft ${version}` : 'Minecraft -';
+};
+
+const createInstanceTagBadge = (tagType, classPrefix = 'instance-tag') => {
+    if (!tagType || !INSTANCE_TAG_LABELS[tagType]) return null;
+
+    let tagElement = document.createElement('div');
+    tagElement.classList.add(classPrefix, `${classPrefix}-${tagType}`);
+    tagElement.textContent = INSTANCE_TAG_LABELS[tagType];
+    return tagElement;
+};
+
 class Home {
     static id = "home";
     async init(config) {
@@ -358,9 +402,8 @@ class Home {
             let instance = instancesList.find(i => i.id === instanceId)
             let detailsContainer = document.querySelector('.details-content')
             if (!instance) return;
-
-            let statusClass = instance.status === 'maintenance' ? 'status-maintenance' : 'status-online';
-            let statusText = instance.status === 'maintenance' ? 'Maintenance' : 'En Ligne';
+            let tagType = resolveInstanceTag(instance);
+            let versionLabel = getMinecraftVersionLabel(instance);
             // Fix broken unicode escapes where backslash is stripped
             let cleanDesc = instance.description
                 ? instance.description.replace(/u([0-9a-fA-F]{4})/g, (m, hex) => String.fromCharCode(parseInt(hex, 16)))
@@ -375,9 +418,16 @@ class Home {
             detailTitle.classList.add('detail-title');
             detailTitle.textContent = instance.name || instance.id;
 
-            let detailStatus = document.createElement('div');
-            detailStatus.classList.add('detail-status', statusClass);
-            detailStatus.textContent = statusText;
+            let detailMeta = document.createElement('div');
+            detailMeta.classList.add('detail-meta');
+
+            let detailVersion = document.createElement('div');
+            detailVersion.classList.add('detail-version');
+            detailVersion.textContent = versionLabel;
+
+            let detailTag = createInstanceTagBadge(tagType, 'detail-tag');
+            detailMeta.appendChild(detailVersion);
+            if (detailTag) detailMeta.appendChild(detailTag);
 
             let descriptionElement = document.createElement('div');
             descriptionElement.classList.add('detail-description');
@@ -397,7 +447,7 @@ class Home {
             selectBtn.type = 'button';
             selectBtn.textContent = 'Sélectionner';
 
-            detailHeader.append(detailTitle, detailStatus);
+            detailHeader.append(detailTitle, detailMeta);
             detailActions.appendChild(selectBtn);
             detailsContainer.append(detailHeader, descriptionElement, detailActions);
 
@@ -446,10 +496,25 @@ class Home {
                     renderDetails(instance.id)
                 }
                 let instanceName = document.createElement('div')
+                let instanceMeta = document.createElement('div')
+                let instanceVersion = document.createElement('div')
+                let instanceTag = createInstanceTagBadge(resolveInstanceTag(instance))
+
+                instanceMeta.classList.add('instance-elements-meta')
                 instanceName.classList.add('instance-elements-name')
                 instanceName.style.pointerEvents = 'none'
                 instanceName.textContent = instance.name || instance.id
-                DOM.appendChild(instanceName)
+
+                instanceVersion.classList.add('instance-elements-version')
+                instanceVersion.style.pointerEvents = 'none'
+                instanceVersion.textContent = getMinecraftVersionLabel(instance)
+
+                instanceMeta.append(instanceName, instanceVersion)
+                DOM.appendChild(instanceMeta)
+                if (instanceTag) {
+                    instanceTag.style.pointerEvents = 'none'
+                    DOM.appendChild(instanceTag)
+                }
                 instancesListPopup.appendChild(DOM)
             }
             if (instance.id == instanceSelect) setStatus(instance.status)

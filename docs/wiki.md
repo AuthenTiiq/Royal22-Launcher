@@ -368,6 +368,64 @@ Depuis le fichier situé dans le dossier web /launcher/config-launcher/config.js
 - ip : `123.546.789` Cette option permet de définir l'adresse IP du serveur qui sera affiché dans le launcher.
 - port : `25565` Cette option permet de définir le port du serveur qui sera affiché dans le launcher.
 
+### 3.3.1 Tags d'instance et version Minecraft dans le sélecteur
+
+Le launcher affiche désormais :
+- La version Minecraft de chaque instance (lue depuis `loadder.minecraft_version`).
+- Un tag visuel optionnel à la place d'un statut en ligne générique.
+
+Tags supportés (côté serveur) :
+- `Prochainement` / `upcoming` / `soon`
+- `Nouveau` / `new`
+- `Indisponible` / `unavailable` / `disabled`
+
+Champs acceptés dans chaque objet d'instance :
+- `tag`
+- `launcherTag`
+- `badge`
+- `displayTag`
+
+Si aucun tag n'est fourni, le launcher peut automatiquement marquer une instance en indisponible quand :
+- `status` vaut `maintenance`
+- `enabled` vaut `false`
+- `available` vaut `false`
+
+Exemple (endpoint `.../files`) :
+
+```json
+{
+  "royalcreeps": {
+    "name": "RoyalCreeps",
+    "status": "online",
+    "loadder": {
+      "minecraft_version": "1.21.4",
+      "loadder_type": "fabric",
+      "loadder_version": "0.16.9"
+    },
+    "tag": "Nouveau"
+  },
+  "legacy4j": {
+    "name": "Legacy 4J",
+    "status": "maintenance",
+    "loadder": {
+      "minecraft_version": "1.20.1",
+      "loadder_type": "forge",
+      "loadder_version": "47.2.0"
+    },
+    "tag": "Indisponible"
+  },
+  "skyblock": {
+    "name": "SkyBlock",
+    "loadder": {
+      "minecraft_version": "1.21.4",
+      "loadder_type": "none",
+      "loadder_version": ""
+    },
+    "launcherTag": "upcoming"
+  }
+}
+```
+
 Une fois la configuration côté serveur web faite, il faut configurer le launcher pour indiquer l'URL où aller chercher les fichiers sur serveur web. Pour ce faire changez l'url souligné ci-dessous dans le fichier package.json par l'URL de votre serveur web.
 
 ![Sélectionner le profile par défault](./images/serverpath.png)
