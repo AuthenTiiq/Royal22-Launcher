@@ -363,10 +363,69 @@ From the file located in the web folder /launcher/config-launcher/config.json yo
 - game_args : add additional custom arguments to launch the game
 - dataDirectory: `Minecraft` This option allows you to define the directory where your game will download. Do not put a dot, it will be added automatically if needed.
 - ignored: `logs` This option allows you to white-list the files that will not be verified by "verify".
+- forceVerify: `mods/important.jar` This option allows you to force verification for a target file/folder even if it is covered by `ignored`. `forceVerify` has priority over `ignored`.
 - status: This section allows you to define which server will be displayed in the launcher.
 - nameserver: `Craftlaunch Server` This option allows you to set the server name that will be displayed in the launcher.
 - ip: `123.546.789` This option sets the IP address of the server that will be displayed in the launcher.
 - port: `25565` This option allows you to set the port of the server that will be displayed in the launcher.
+
+### 3.3.1 Instance tags and Minecraft version in the instance selector
+
+The launcher now displays:
+- The Minecraft version for each instance (read from `loadder.minecraft_version`).
+- An optional visual tag instead of a generic online label.
+
+Supported tags (server-side):
+- `Prochainement` / `upcoming` / `soon`
+- `Nouveau` / `new`
+- `Indisponible` / `unavailable` / `disabled`
+
+Accepted fields in each instance object:
+- `tag`
+- `launcherTag`
+- `badge`
+- `displayTag`
+
+If no tag is provided, the launcher can still automatically mark an instance as unavailable when:
+- `status` is `maintenance`
+- `enabled` is `false`
+- `available` is `false`
+
+Example (endpoint `.../files`):
+
+```json
+{
+  "royalcreeps": {
+    "name": "RoyalCreeps",
+    "status": "online",
+    "loadder": {
+      "minecraft_version": "1.21.4",
+      "loadder_type": "fabric",
+      "loadder_version": "0.16.9"
+    },
+    "tag": "Nouveau"
+  },
+  "legacy4j": {
+    "name": "Legacy 4J",
+    "status": "maintenance",
+    "loadder": {
+      "minecraft_version": "1.20.1",
+      "loadder_type": "forge",
+      "loadder_version": "47.2.0"
+    },
+    "tag": "Indisponible"
+  },
+  "skyblock": {
+    "name": "SkyBlock",
+    "loadder": {
+      "minecraft_version": "1.21.4",
+      "loadder_type": "none",
+      "loadder_version": ""
+    },
+    "launcherTag": "upcoming"
+  }
+}
+```
 
 Once the configuration on the web server side done, you have to configure the launcher to indicate the URL where to fetch the files on the web server. To do this change the url underlined below in the file package.json by the URL of your web server.
 
