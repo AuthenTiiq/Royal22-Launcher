@@ -510,11 +510,11 @@ class Home {
                 instanceVersion.textContent = getMinecraftVersionLabel(instance)
 
                 instanceMeta.append(instanceName, instanceVersion)
-                DOM.appendChild(instanceMeta)
                 if (instanceTag) {
                     instanceTag.style.pointerEvents = 'none'
-                    DOM.appendChild(instanceTag)
+                    instanceMeta.appendChild(instanceTag)
                 }
+                DOM.appendChild(instanceMeta)
                 instancesListPopup.appendChild(DOM)
             }
             if (instance.id == instanceSelect) setStatus(instance.status)
