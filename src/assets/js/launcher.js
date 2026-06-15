@@ -78,12 +78,107 @@ class Launcher {
 
     async initBackground() {
         const video = document.getElementById("background-video");
+        if (!video) return;
+
+        const API_TIMEOUT = 5000;
+        const backgroundApi = 'https://data.royalcreeps.fr/facuuid.php';
+        const colorToPoster = {
+            bleu: 'assets/images/background/royalb.png',
+            rouge: 'assets/images/background/royalr.png'
+        };
+
+        let currentColor = 'bleu';
+
+        const resolvePosterPath = (color) => {
+            let candidate = colorToPoster[color] || colorToPoster.bleu;
+            let absoluteCandidatePath = `${__dirname}/${candidate}`;
+            if (fs.existsSync(absoluteCandidatePath)) return candidate;
+            return colorToPoster.bleu;
+        };
+
+        const readSelectedAccountUUID = async () => {
+            let db = new database();
+            let configClient = await db.readData('configClient').catch(() => null);
+            if (!configClient?.account_selected) return null;
+
+            let account = await db.readData('accounts', configClient.account_selected).catch(() => null);
+            return account?.uuid || null;
+        };
+
+        const toDashedUUID = (uuid) => {
+            if (!uuid) return null;
+
+            let cleaned = String(uuid).trim().toLowerCase().replace(/[^0-9a-f]/g, '');
+            if (cleaned.length !== 32) return String(uuid).trim().toLowerCase();
+
+            return [
+                cleaned.slice(0, 8),
+                cleaned.slice(8, 12),
+                cleaned.slice(12, 16),
+                cleaned.slice(16, 20),
+                cleaned.slice(20)
+            ].join('-');
+        };
+
+        const fetchColorFromAPI = async (uuid) => {
+            if (!uuid) {
+                console.log('[Background] Aucun UUID sélectionné, fallback faction=bleu');
+                return 'bleu';
+            }
+
+            let controller = new AbortController();
+            let timeout = setTimeout(() => controller.abort(), API_TIMEOUT);
+
+            try {
+                let response = await fetch(`${backgroundApi}?${encodeURIComponent(uuid)}`, { signal: controller.signal });
+                if (!response.ok) {
+                    console.log(`[Background] API facuuid HTTP ${response.status}, fallback faction=bleu`);
+                    return 'bleu';
+                }
+
+                let rawFaction = await response.text();
+                let color = rawFaction.trim().toLowerCase();
+
+                // API may return a JSON string ("bleu") or quoted text.
+                try {
+                    let parsed = JSON.parse(rawFaction);
+                    if (typeof parsed === 'string') color = parsed.trim().toLowerCase();
+                } catch {
+                    color = color.replace(/^['"]+|['"]+$/g, '');
+                }
+
+                if (!color || color === 'null' || color === 'undefined' || color === 'none') {
+                    console.log(`[Background] API facuuid vide pour uuid=${uuid}, fallback faction=bleu`);
+                    return 'bleu';
+                }
+
+                if (color !== 'bleu' && color !== 'rouge') {
+                    console.log(`[Background] API facuuid valeur inconnue "${color}" pour uuid=${uuid}, fallback faction=bleu`);
+                    return 'bleu';
+                }
+
+                console.log(`[Background] API facuuid uuid=${uuid} faction=${color}`);
+                return color;
+            } catch (err) {
+                console.error('Impossible de récupérer la couleur de background via facuuid:', err);
+                return 'bleu';
+            } finally {
+                clearTimeout(timeout);
+            }
+        };
+
+        const getVideoUrl = (color) => {
+            const hour = new Date().getHours();
+            const period = hour >= 6 && hour < 18 ? 'jour' : 'nuit';
+            return `https://data.royalcreeps.fr/launcher/r22launcher/background/royalcreeps-background-${color}-${period}.mov`;
+        };
 
         const changeSource = (url) => {
             const video = document.getElementById("background-video");
+            const poster = resolvePosterPath(currentColor);
             console.log("Chargement du background RoyalCreeps : ", url);
+            video.poster = poster;
             video.src = url;
-            video.poster = ""; // Réinitialise le poster
             video.load(); // Charge la nouvelle source
             video.onloadeddata = () => {
                 // console.log("La vidéo est chargée, en train de jouer...");
@@ -91,27 +186,28 @@ class Launcher {
             };
         };
 
-
-        const getVideoUrl = () => {
-            const hour = new Date().getHours();
-            if (hour >= 6 && hour < 18) {
-                return "https://data.royalcreeps.fr/launcher/r22launcher/background/royalcreeps-background-bleu-jour.mov";
-            } else {
-                return "https://data.royalcreeps.fr/launcher/r22launcher/background/royalcreeps-background-bleu-nuit.mov";
+        const updateVideo = async () => {
+            let accountUUID = await readSelectedAccountUUID();
+            let apiUUID = toDashedUUID(accountUUID);
+            if (apiUUID && apiUUID !== accountUUID) {
+                console.log(`[Background] UUID normalisé pour API: ${accountUUID} -> ${apiUUID}`);
             }
-        };
 
-        const updateVideo = () => {
+            currentColor = await fetchColorFromAPI(apiUUID);
+            video.poster = resolvePosterPath(currentColor);
+            console.log(`[Background] Couleur appliquée=${currentColor} poster=${video.poster}`);
+
             const currentUrl = video.src;
-            const newUrl = getVideoUrl();
+            const newUrl = getVideoUrl(currentColor);
             if (currentUrl !== newUrl) {
                 changeSource(newUrl);
             }
         };
 
-
-        updateVideo();
-        setInterval(updateVideo, 60000);
+        await updateVideo();
+        setInterval(() => {
+            updateVideo().catch(err => console.error('Background refresh failed:', err));
+        }, 60000);
     }
 
     shortcut() {
