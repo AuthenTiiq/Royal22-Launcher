@@ -94,8 +94,13 @@ const sanitizeNewsHTML = value => {
 };
 
 const getPlainTextFromHTML = value => {
+    // Preserve spacing for common block/line-break tags before text extraction.
+    let normalizedHTML = String(value ?? '')
+        .replace(/<br\s*\/?\s*>/gi, '\n')
+        .replace(/<\/(p|div|li|h1|h2|h3|h4|h5|h6|tr|blockquote)>/gi, '$&\n');
+
     let template = document.createElement('template');
-    template.innerHTML = String(value ?? '');
+    template.innerHTML = normalizedHTML;
     return template.content.textContent || '';
 };
 
@@ -250,11 +255,12 @@ class Home {
                     let content = News.content ?? '';
                     let plainContent = getPlainTextFromHTML(content).trim();
                     let hasLongContent = plainContent.length > 150;
-                    let preview = hasLongContent ? getNewsPreview(content) : content;
+                    let preview = getNewsPreview(content);
                     let blockNews = document.createElement('div');
                     blockNews.className = 'news-block';
                     let readMoreHtml = hasLongContent ? '<div class="read-more-btn">Afficher plus</div>' : '';
-                    let contentHtml = hasLongContent ? `<p>${escapeHTML(preview)}</p>` : sanitizeNewsHTML(preview);
+                    // Keep preview as plain text; HTML is only rendered in the full popup.
+                    let contentHtml = `<p>${escapeHTML(preview)}</p>`;
 
                     blockNews.innerHTML = `
                         <div class="news-header">
